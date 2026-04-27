@@ -17,10 +17,24 @@ cursor.execute('''
         title TEXT NOT NULL,
         description TEXT,
         image TEXT,
+        column_name TEXT DEFAULT 'To Do',
+        position INTEGER DEFAULT 0,
         completed BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 ''')
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS task_columns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        position INTEGER DEFAULT 0
+    )
+''')
+
+cursor.execute("INSERT INTO task_columns (name, position) VALUES ('To Do', 0)")
+cursor.execute("INSERT INTO task_columns (name, position) VALUES ('In Progress', 1)")
+cursor.execute("INSERT INTO task_columns (name, position) VALUES ('Done', 2)")
 
 cursor.execute("INSERT INTO status_log (status) VALUES ('healthy')")
 conn.commit()

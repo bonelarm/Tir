@@ -105,10 +105,20 @@ def get_tasks():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tasks ORDER BY completed ASC, created_at DESC")
+    cursor.execute("SELECT * FROM tasks ORDER BY position ASC, created_at DESC")
     tasks = cursor.fetchall()
     conn.close()
     return [dict(row) for row in tasks]
+
+
+def get_task_columns():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM task_columns ORDER BY position ASC")
+    columns = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in columns]
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -374,11 +384,12 @@ async def add_customer(name: str = Form(...), description: str = Form(""), email
 @app.get("/tasks", response_class=HTMLResponse)
 def tasks(request: Request):
     task_list = get_tasks()
-    return templates.TemplateResponse("tasks.html", {"request": request, "tasks": task_list})
+    columns = get_task_columns()
+    return templates.TemplateResponse("tasks.html", {"request": request, "tasks": task_list, "columns": columns})
 
 
 @app.post("/tasks/add")
-async def add_task(title: str = Form(...), description: str = Form(""), image: UploadFile = File(None)):
+async def add_task(title: str = Form(...), description: str = Form(""), column_name: str = Form("To Do"), image: UploadFile = File(None)):
     image_path = ""
     if image and image.filename:
         safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
@@ -389,7 +400,21 @@ async def add_task(title: str = Form(...), description: str = Form(""), image: U
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO tasks (title, description, image) VALUES (?, ?, ?)", (title, description, image_path))
+    cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 as pos FROM tasks WHERE column_name = ?", (column_name,))
+    pos = cursor.fetchone()[0]
+    cursor.execute("INSERT INTO tasks (title, description, image, column_name, position) VALUES (?, ?, ?, ?, ?)", (title, description, image_path, column_name, pos))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/tasks", status_code=303)
+
+
+@app.post("/tasks/move/{task_id}")
+def move_task(task_id: int, column_name: str = Form(...)):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 as pos FROM tasks WHERE column_name = ?", (column_name,))
+    pos = cursor.fetchone()[0]
+    cursor.execute("UPDATE tasks SET column_name = ?, position = ? WHERE id = ?", (column_name, pos, task_id))
     conn.commit()
     conn.close()
     return RedirectResponse(url="/tasks", status_code=303)
@@ -436,6 +461,42 @@ def delete_task(task_id: int):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/tasks", status_code=303)
+
+
+@app.post("/tasks/columns/add")
+def add_column(name: str = Form(...)):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 as pos FROM task_columns")
+    pos = cursor.fetchone()[0]
+    cursor.execute("INSERT INTO task_columns (name, position) VALUES (?, ?)", (name, pos))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/tasks", status_code=303)
+
+
+@app.post("/tasks/columns/edit/{column_id}")
+def edit_column(column_id: int, name: str = Form(...)):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE task_columns SET name = ? WHERE id = ?", (name, column_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/tasks", status_code=303)
+
+
+@app.post("/tasks/columns/delete/{column_id}")
+def delete_column(column_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM task_columns WHERE id = ?", (column_id,))
+    col = cursor.fetchone()
+    if col:
+        cursor.execute("DELETE FROM tasks WHERE column_name = ?", (col[0],))
+        cursor.execute("DELETE FROM task_columns WHERE id = ?", (column_id,))
     conn.commit()
     conn.close()
     return RedirectResponse(url="/tasks", status_code=303)
