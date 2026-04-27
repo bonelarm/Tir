@@ -29,12 +29,14 @@ def get_db_status():
         cursor = conn.cursor()
         cursor.execute("SELECT status, timestamp FROM status_log ORDER BY id DESC LIMIT 1")
         result = cursor.fetchone()
+        cursor.execute("SELECT COUNT(*) FROM customers")
+        customer_count = cursor.fetchone()[0]
         conn.close()
         if result:
-            return {"status": result[0], "timestamp": result[1]}
-        return {"status": "unknown"}
+            return {"status": result[0], "timestamp": result[1], "customer_count": customer_count}
+        return {"status": "unknown", "customer_count": customer_count}
     except:
-        return {"status": "error"}
+        return {"status": "error", "customer_count": 0}
 
 
 def get_customers():
@@ -167,6 +169,17 @@ def delete_contact(customer_id: int, contact_id: int):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM contacts WHERE id = ? AND customer_id = ?", (contact_id, customer_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=f"/customers/{customer_id}", status_code=303)
+
+
+@app.post("/customers/{customer_id}/contact/edit/{contact_id}")
+def edit_contact(customer_id: int, contact_id: int, contact_name: str = Form(...), phone: str = Form(...)):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE contacts SET name = ?, phone = ? WHERE id = ? AND customer_id = ?",
+                   (contact_name, phone, contact_id, customer_id))
     conn.commit()
     conn.close()
     return RedirectResponse(url=f"/customers/{customer_id}", status_code=303)
