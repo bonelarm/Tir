@@ -41,6 +41,46 @@ def get_db_status():
         return {"status": "error", "customer_count": 0}
 
 
+def get_items(search: str = "", sort: str = "name_asc"):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    query = "SELECT * FROM items WHERE 1=1"
+    params = []
+    
+    if search:
+        search_term = f"%{search}%"
+        query += " AND (name LIKE ? OR description LIKE ?)"
+        params.extend([search_term, search_term])
+    
+    if sort == "name_asc":
+        query += " ORDER BY name ASC"
+    elif sort == "name_desc":
+        query += " ORDER BY name DESC"
+    elif sort == "quantity_asc":
+        query += " ORDER BY quantity ASC"
+    elif sort == "quantity_desc":
+        query += " ORDER BY quantity DESC"
+    else:
+        query += " ORDER BY name ASC"
+    
+    cursor.execute(query, params)
+    items = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in items]
+
+
+def get_item(item_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+    item = cursor.fetchone()
+    conn.close()
+    return dict(item) if item else None
+
+
 def get_customers(search: str = "", sort: str = "name_asc"):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -534,3 +574,76 @@ def delete_column(column_id: int):
 @app.get("/health")
 def health():
     return get_db_status()
+
+
+@app.get("/items", response_class=HTMLResponse)
+def items(request: Request, search: str = "", sort: str = "name_asc"):
+    item_list = get_items(search, sort)
+    return templates.TemplateResponse("items.html", {
+        "request": request,
+        "items": item_list,
+        "search": search,
+        "sort": sort
+    })
+
+
+@app.post("/items/add")
+async def add_item(name: str = Form(...), description: str = Form(""), quantity: int = Form(0), image: UploadFile = File(None)):
+    image_path = ""
+    if image and image.filename:
+        safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
+        image_path = f"images/{safe_filename}"
+        file_path = STATIC_DIR / image_path
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(image.file, f)
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO items (name, description, image, quantity) VALUES (?, ?, ?, ?)", (name, description, image_path, quantity))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/items", status_code=303)
+
+
+@app.get("/items/edit/{item_id}", response_class=HTMLResponse)
+def edit_item(item_id: int, request: Request):
+    item = get_item(item_id)
+    if not item:
+        return RedirectResponse(url="/items", status_code=303)
+    return templates.TemplateResponse("item_edit.html", {"request": request, "item": item})
+
+
+@app.post("/items/edit/{item_id}")
+async def update_item(item_id: int, name: str = Form(...), description: str = Form(""), quantity: int = Form(0), image: UploadFile = File(None)):
+    item = get_item(item_id)
+    if not item:
+        return RedirectResponse(url="/items", status_code=303)
+
+    image_path = item["image"]
+    if image and image.filename:
+        if item["image"]:
+            old_file = STATIC_DIR / item["image"]
+            if old_file.exists():
+                old_file.unlink()
+        safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
+        image_path = f"images/{safe_filename}"
+        file_path = STATIC_DIR / image_path
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(image.file, f)
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE items SET name = ?, description = ?, image = ?, quantity = ? WHERE id = ?", (name, description, image_path, quantity, item_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/items", status_code=303)
+
+
+@app.post("/items/delete/{item_id}")
+def delete_item(item_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM items WHERE id = ?", (item_id,))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/items", status_code=303)

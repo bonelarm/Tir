@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Items - TIR{% endblock %}
+
+{% block content %}
+<main class="container" style="padding: 2rem 0;">
+    <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+        <h1>Items</h1>
+        <button class="btn btn-primary" onclick="document.getElementById('addForm').classList.toggle('hidden')">Add Item</button>
+    </div>
+
+    <div class="flex" style="gap: 1rem; margin-bottom: 1.5rem;">
+        <input type="text" id="searchInput" placeholder="Search items..." value="{{ search }}" style="flex: 1; max-width: 300px;" onkeyup="handleSearch(event)">
+        <select id="sortSelect" style="width: 150px;" onchange="handleSort()">
+            <option value="name_asc" {% if sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+            <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+            <option value="quantity_asc" {% if sort == 'quantity_asc' %}selected{% endif %}>Quantity (Low to High)</option>
+            <option value="quantity_desc" {% if sort == 'quantity_desc' %}selected{% endif %}>Quantity (High to Low)</option>
+        </select>
+    </div>
+
+    <div id="addForm" class="card hidden" style="margin-bottom: 2rem; max-width: 600px;">
+        <h3 style="margin-bottom: 1rem;">Add New Item</h3>
+        <form action="/items/add" method="post" enctype="multipart/form-data">
+            <div class="grid grid-2" style="gap: 1rem;">
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" name="quantity" value="0" min="0">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="2"></textarea>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="image">Image</label>
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('addForm').classList.add('hidden')">Cancel</button>
+        </form>
+    </div>
+
+    <div id="tileView" class="grid grid-3">
+        {% for item in items %}
+        <div class="card">
+            {% if item.image %}
+            <img src="/static/{{ item.image }}" alt="{{ item.name }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: 1rem;">
+            {% else %}
+            <div style="width: 100%; height: 150px; background: var(--bg-elevated); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">No Image</div>
+            {% endif %}
+            <h3>{{ item.name }}</h3>
+            {% if item.description %}
+            <p class="text-sm text-secondary" style="margin-bottom: 0.5rem;">{{ item.description[:80] }}{% if item.description|length > 80 %}...{% endif %}</p>
+            {% endif %}
+            <p class="text-sm"><strong>Qty:</strong> {{ item.quantity }}</p>
+            <div class="flex" style="gap: 0.5rem; margin-top: 0.5rem;">
+                <a href="/items/edit/{{ item.id }}" class="icon-btn" title="Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </a>
+                <form action="/items/delete/{{ item.id }}" method="post" onsubmit="return confirm('Delete {{ item.name }}?')" style="display: inline;">
+                    <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted">No items found.</p>
+        {% endfor %}
+    </div>
+</main>
+
+<script>
+function handleSearch(event) {
+    if (event.key === 'Enter') {
+        const search = event.target.value;
+        const sort = document.getElementById('sortSelect').value;
+        window.location.href = `/items?search=${encodeURIComponent(search)}&sort=${sort}`;
+    }
+}
+
+function handleSort() {
+    const search = document.getElementById('searchInput').value;
+    const sort = document.getElementById('sortSelect').value;
+    window.location.href = `/items?search=${encodeURIComponent(search)}&sort=${sort}`;
+}
+</script>
+{% endblock %}

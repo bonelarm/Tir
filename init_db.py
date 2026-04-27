@@ -38,6 +38,17 @@ cursor.execute("INSERT INTO task_columns (name, position) VALUES ('To Do', 0)")
 cursor.execute("INSERT INTO task_columns (name, position) VALUES ('In Progress', 1)")
 cursor.execute("INSERT INTO task_columns (name, position) VALUES ('Done', 2)")
 
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        image TEXT,
+        quantity INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+''')
+
 cursor.execute("INSERT INTO status_log (status) VALUES ('healthy')")
 conn.commit()
 conn.close()

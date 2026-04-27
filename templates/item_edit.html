@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Item - TIR{% endblock %}
+
+{% block content %}
+<main class="container" style="padding: 2rem 0;">
+    <a href="/items" class="btn btn-ghost" style="margin-bottom: 1rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back
+    </a>
+
+    <h1>Edit Item</h1>
+    <div class="card" style="max-width: 600px; margin-top: 1rem;">
+        <form action="/items/edit/{{ item.id }}" method="post" enctype="multipart/form-data">
+            <div class="grid grid-2" style="gap: 1rem;">
+                <div class="form-group">
+                    <label for="name">Name *</label>
+                    <input type="text" id="name" name="name" value="{{ item.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" name="quantity" value="{{ item.quantity }}" min="0">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" rows="3">{{ item.description or '' }}</textarea>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="image">Image</label>
+                    <input type="file" id="image" name="image" accept="image/*">
+                    {% if item.image %}
+                    <p class="text-sm text-muted" style="margin-top: 0.5rem;">Current: {{ item.image }}</p>
+                    <img src="/static/{{ item.image }}" alt="" style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-sm); margin-top: 0.5rem;">
+                    {% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a href="/items" class="btn btn-ghost">Cancel</a>
+        </form>
+    </div>
+</main>
+{% endblock %}
