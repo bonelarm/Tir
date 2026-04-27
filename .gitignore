@@ -2,8 +2,6 @@ __pycache__/
 *.pyc
 github_pat_*
 tir.db
-/static/images/
-/images/
 *.jpg
 *.jpeg
 *.png
@@ -11,3 +9,5 @@ tir.db
 *.svg
 *.webp
 *.ico
+/static/images/*
+/images/*
