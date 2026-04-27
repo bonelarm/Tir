@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Status{% endblock %}
+{% block title %}Status - TIR{% endblock %}
 
 {% block content %}
-<main style="padding: 2rem;">
+<main class="container" style="padding: 2rem 0;">
     <h1>Status</h1>
-    <p id="status">Loading...</p>
+    <div class="card" style="margin-top: 1rem;">
+        <p class="text-secondary">Application Status: <span id="status" class="text-primary">Loading...</span></p>
+    </div>
 </main>
 
 <script>
