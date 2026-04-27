@@ -52,6 +52,12 @@
                         <input type="hidden" name="column_name" value="{{ column.name }}">
                         <input type="text" name="title" placeholder="Task title" required style="padding: 0.5rem; font-size: 0.875rem;">
                         <input type="text" name="description" placeholder="Description (optional)" style="padding: 0.5rem; font-size: 0.875rem;">
+                        <select name="customer_id" style="padding: 0.5rem; font-size: 0.875rem;">
+                            <option value="">No Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
                         <input type="file" name="image" accept="image/*" style="font-size: 0.75rem; padding: 0.25rem;">
                         <div class="flex" style="gap: 0.25rem;">
                             <button type="submit" class="btn btn-primary btn-sm">Add</button>
@@ -69,7 +75,16 @@
                     {% if task.description %}
                     <p class="text-sm text-secondary" style="margin-bottom: 0.5rem;">{{ task.description }}</p>
                     {% endif %}
+                    {% if task.customer_name %}
+                    <a href="/customers/{{ task.customer_id }}" class="text-sm" style="display: inline-flex; align-items: center; gap: 0.25rem; color: var(--accent-light); margin-bottom: 0.5rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        {{ task.customer_name }}
+                    </a>
+                    {% endif %}
                     <div class="task-actions">
+                        <button type="button" class="icon-btn-sm" onclick="openTaskModal({{ task.id }})" title="View">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
                         <button type="button" class="icon-btn-sm" onclick="document.getElementById('edit-task-{{ task.id }}').classList.toggle('hidden')" title="Edit">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </button>
@@ -85,6 +100,12 @@
                         <input type="hidden" name="column_name" value="{{ column.name }}">
                         <input type="text" name="title" value="{{ task.title }}" required style="padding: 0.5rem; font-size: 0.875rem;">
                         <input type="text" name="description" value="{{ task.description or '' }}" placeholder="Description" style="padding: 0.5rem; font-size: 0.875rem;">
+                        <select name="customer_id" style="padding: 0.5rem; font-size: 0.875rem;">
+                            <option value="">No Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}" {% if task.customer_id == customer.id %}selected{% endif %}>{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
                         <input type="file" name="image" accept="image/*" style="font-size: 0.75rem; padding: 0.25rem;">
                         <div class="flex" style="gap: 0.25rem;">
                             <button type="submit" class="btn btn-primary btn-sm">Save</button>
@@ -99,7 +120,77 @@
     </div>
 </main>
 
+<div id="taskModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); align-items: center; justify-content: center; z-index: 1000; padding: 1rem;" onclick="closeTaskModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-xl); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-light);">
+            <h2 id="modalTitle" style="margin: 0; font-size: 1.25rem;"></h2>
+            <button type="button" onclick="closeTaskModalBtn()" title="Close" style="background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0.25rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div id="modalBody" style="padding: 1.5rem;"></div>
+    </div>
+</div>
+
 <script>
+const taskData = {
+{% for task in tasks %}
+    {{ task.id }}: {title: "{{ task.title|e }}", description: "{{ task.description|e }}", image: "{{ task.image|e }}", column: "{{ task.column_name|e }}", created: "{{ task.created_at|e }}", customer_id: {{ task.customer_id or 'null' }}, customer_name: "{{ task.customer_name|e }}" },
+{% endfor %}
+};
+
+function openTaskModal(taskId) {
+    const task = taskData[taskId];
+    if (!task) {
+        console.warn('Task not found:', taskId);
+        return;
+    }
+    
+    document.getElementById('modalTitle').textContent = task.title || 'Untitled';
+    
+    let html = '';
+    if (task.image) {
+        html += '<img src="/static/' + task.image + '" alt="" style="width: 100%; max-height: 300px; object-fit: contain; border-radius: var(--radius-md); margin-bottom: 1rem; background: var(--bg-elevated);">';
+    }
+    if (task.description) {
+        html += '<p style="margin-bottom: 1rem; color: var(--text-secondary);">' + task.description + '</p>';
+    }
+    if (!task.image && !task.description) {
+        html += '<p style="color: var(--text-muted);">No description</p>';
+    }
+    if (task.customer_name) {
+        html += '<p style="margin-bottom: 1rem;"><strong>Customer:</strong> <a href="/customers/' + task.customer_id + '" style="color: var(--accent-light);">' + task.customer_name + '</a></p>';
+    }
+    html += '<div class="flex" style="gap: 1rem; color: var(--text-muted); font-size: 0.875rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">';
+    html += '<span><strong>Column:</strong> ' + task.column + '</span>';
+    if (task.created) {
+        html += '<span><strong>Created:</strong> ' + task.created + '</span>';
+    }
+    html += '</div>';
+    
+    document.getElementById('modalBody').innerHTML = html;
+    document.getElementById('taskModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeTaskModal(event) {
+    document.getElementById('taskModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+function closeTaskModalBtn() {
+    document.getElementById('taskModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.getElementById('taskModal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+});
+
 function drag(ev) {
     ev.dataTransfer.setData("text", ev.target.dataset.taskId);
     ev.target.style.opacity = '0.5';

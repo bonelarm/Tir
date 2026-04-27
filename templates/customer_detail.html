@@ -161,6 +161,22 @@
                     {% endfor %}
                 </div>
             </div>
+
+            {% if tasks %}
+            <div class="card">
+                <h3 style="margin-bottom: 1rem;">Tasks</h3>
+                <div class="stack" style="gap: 0.5rem;">
+                    {% for task in tasks %}
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
+                        <a href="/tasks" style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                            <span style="{% if task.completed %}text-decoration: line-through; color: var(--text-muted);{% endif %}">{{ task.title }}</span>
+                            <span class="text-xs text-muted">({{ task.column_name }})</span>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </main>
