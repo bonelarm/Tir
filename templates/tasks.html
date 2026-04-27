@@ -58,6 +58,12 @@
                             <option value="{{ customer.id }}">{{ customer.name }}</option>
                             {% endfor %}
                         </select>
+                        <select name="item_id" style="padding: 0.5rem; font-size: 0.875rem;">
+                            <option value="">No Item</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}">{{ item.name }}</option>
+                            {% endfor %}
+                        </select>
                         <input type="file" name="image" accept="image/*" style="font-size: 0.75rem; padding: 0.25rem;">
                         <div class="flex" style="gap: 0.25rem;">
                             <button type="submit" class="btn btn-primary btn-sm">Add</button>
@@ -79,6 +85,12 @@
                     <a href="/customers/{{ task.customer_id }}" class="text-sm" style="display: inline-flex; align-items: center; gap: 0.25rem; color: var(--accent-light); margin-bottom: 0.5rem;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         {{ task.customer_name }}
+                    </a>
+                    {% endif %}
+                    {% if task.item_name %}
+                    <a href="/items" class="text-sm" style="display: inline-flex; align-items: center; gap: 0.25rem; color: var(--accent-light); margin-bottom: 0.5rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        {{ task.item_name }}
                     </a>
                     {% endif %}
                     <div class="task-actions">
@@ -104,6 +116,12 @@
                             <option value="">No Customer</option>
                             {% for customer in customers %}
                             <option value="{{ customer.id }}" {% if task.customer_id == customer.id %}selected{% endif %}>{{ customer.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="item_id" style="padding: 0.5rem; font-size: 0.875rem;">
+                            <option value="">No Item</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}" {% if task.item_id == item.id %}selected{% endif %}>{{ item.name }}</option>
                             {% endfor %}
                         </select>
                         <input type="file" name="image" accept="image/*" style="font-size: 0.75rem; padding: 0.25rem;">
@@ -135,7 +153,7 @@
 <script>
 const taskData = {
 {% for task in tasks %}
-    {{ task.id }}: {title: "{{ task.title|e }}", description: "{{ task.description|e }}", image: "{{ task.image|e }}", column: "{{ task.column_name|e }}", created: "{{ task.created_at|e }}", customer_id: {{ task.customer_id or 'null' }}, customer_name: "{{ task.customer_name|e }}" },
+    {{ task.id }}: {title: "{{ task.title|e }}", description: "{{ task.description|e }}", image: "{{ task.image|e }}", column: "{{ task.column_name|e }}", created: "{{ task.created_at|e }}", customer_id: {{ task.customer_id or 'null' }}, customer_name: "{{ task.customer_name|e }}", item_id: {{ task.item_id or 'null' }}, item_name: "{{ task.item_name|e }}" },
 {% endfor %}
 };
 
@@ -160,6 +178,9 @@ function openTaskModal(taskId) {
     }
     if (task.customer_name) {
         html += '<p style="margin-bottom: 1rem;"><strong>Customer:</strong> <a href="/customers/' + task.customer_id + '" style="color: var(--accent-light);">' + task.customer_name + '</a></p>';
+    }
+    if (task.item_name) {
+        html += '<p style="margin-bottom: 1rem;"><strong>Item:</strong> <a href="/items" style="color: var(--accent-light);">' + task.item_name + '</a></p>';
     }
     html += '<div class="flex" style="gap: 1rem; color: var(--text-muted); font-size: 0.875rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">';
     html += '<span><strong>Column:</strong> ' + task.column + '</span>';

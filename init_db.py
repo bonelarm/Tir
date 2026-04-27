@@ -18,11 +18,13 @@ cursor.execute('''
         description TEXT,
         image TEXT,
         customer_id INTEGER,
+        item_id INTEGER,
         column_name TEXT DEFAULT 'To Do',
         position INTEGER DEFAULT 0,
         completed BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (customer_id) REFERENCES customers(id)
+        FOREIGN KEY (customer_id) REFERENCES customers(id),
+        FOREIGN KEY (item_id) REFERENCES items(id)
     )
 ''')
 

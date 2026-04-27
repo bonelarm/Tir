@@ -146,14 +146,25 @@ def get_tasks():
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT t.*, c.name as customer_name 
+        SELECT t.*, c.name as customer_name, i.name as item_name 
         FROM tasks t 
-        LEFT JOIN customers c ON t.customer_id = c.id 
+        LEFT JOIN customers c ON t.customer_id = c.id
+        LEFT JOIN items i ON t.item_id = i.id
         ORDER BY t.position ASC, t.created_at DESC
     """)
     tasks = cursor.fetchall()
     conn.close()
     return [dict(row) for row in tasks]
+
+
+def get_items_list():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name FROM items ORDER BY name ASC")
+    items = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in items]
 
 
 def get_customers_list():
@@ -450,11 +461,12 @@ def tasks(request: Request):
     task_list = get_tasks()
     columns = get_task_columns()
     customers = get_customers_list()
-    return templates.TemplateResponse("tasks.html", {"request": request, "tasks": task_list, "columns": columns, "customers": customers})
+    items = get_items_list()
+    return templates.TemplateResponse("tasks.html", {"request": request, "tasks": task_list, "columns": columns, "customers": customers, "items": items})
 
 
 @app.post("/tasks/add")
-async def add_task(title: str = Form(...), description: str = Form(""), column_name: str = Form("To Do"), customer_id: str = Form(""), image: UploadFile = File(None)):
+async def add_task(title: str = Form(...), description: str = Form(""), column_name: str = Form("To Do"), customer_id: str = Form(""), item_id: str = Form(""), image: UploadFile = File(None)):
     image_path = ""
     if image and image.filename:
         safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
@@ -464,12 +476,13 @@ async def add_task(title: str = Form(...), description: str = Form(""), column_n
             shutil.copyfileobj(image.file, f)
 
     cust_id = int(customer_id) if customer_id and customer_id.isdigit() else None
+    itm_id = int(item_id) if item_id and item_id.isdigit() else None
     
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 as pos FROM tasks WHERE column_name = ?", (column_name,))
     pos = cursor.fetchone()[0]
-    cursor.execute("INSERT INTO tasks (title, description, image, column_name, position, customer_id) VALUES (?, ?, ?, ?, ?, ?)", (title, description, image_path, column_name, pos, cust_id))
+    cursor.execute("INSERT INTO tasks (title, description, image, column_name, position, customer_id, item_id) VALUES (?, ?, ?, ?, ?, ?, ?)", (title, description, image_path, column_name, pos, cust_id, itm_id))
     conn.commit()
     conn.close()
     return RedirectResponse(url="/tasks", status_code=303)
@@ -498,11 +511,11 @@ def toggle_task(task_id: int):
 
 
 @app.post("/tasks/edit/{task_id}")
-async def edit_task(task_id: int, title: str = Form(...), description: str = Form(""), customer_id: str = Form(""), image: UploadFile = File(None)):
+async def edit_task(task_id: int, title: str = Form(...), description: str = Form(""), customer_id: str = Form(""), item_id: str = Form(""), image: UploadFile = File(None)):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT image, customer_id FROM tasks WHERE id = ?", (task_id,))
+    cursor.execute("SELECT image, customer_id, item_id FROM tasks WHERE id = ?", (task_id,))
     existing = cursor.fetchone()
     image_path = existing["image"] if existing else ""
 
@@ -518,8 +531,9 @@ async def edit_task(task_id: int, title: str = Form(...), description: str = For
             shutil.copyfileobj(image.file, f)
 
     cust_id = int(customer_id) if customer_id and customer_id.isdigit() else None
+    itm_id = int(item_id) if item_id and item_id.isdigit() else None
     
-    cursor.execute("UPDATE tasks SET title = ?, description = ?, image = ?, customer_id = ? WHERE id = ?", (title, description, image_path, cust_id, task_id))
+    cursor.execute("UPDATE tasks SET title = ?, description = ?, image = ?, customer_id = ?, item_id = ? WHERE id = ?", (title, description, image_path, cust_id, itm_id, task_id))
     conn.commit()
     conn.close()
     return RedirectResponse(url="/tasks", status_code=303)
