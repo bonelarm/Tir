@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Customers - TIR{% endblock %}
+
+{% block content %}
+<main class="container" style="padding: 2rem 0;">
+    <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+        <h1>Customers</h1>
+        <button class="btn btn-primary" onclick="document.getElementById('addForm').classList.toggle('hidden')">Add Customer</button>
+    </div>
+
+    <div id="addForm" class="card hidden" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem;">Add New Customer</h3>
+        <form action="/customers/add" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="name">Name *</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="image">Image</label>
+                <input type="file" id="image" name="image" accept="image/*">
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('addForm').classList.add('hidden')">Cancel</button>
+        </form>
+    </div>
+
+    <div class="grid grid-3">
+        {% for customer in customers %}
+        <div class="card" style="position: relative;">
+            {% if customer.image %}
+            <img src="/static/{{ customer.image }}" alt="{{ customer.name }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: 1rem;">
+            {% else %}
+            <div style="width: 100%; height: 150px; background: var(--bg-elevated); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">No Image</div>
+            {% endif %}
+            <h3>{{ customer.name }}</h3>
+            {% if customer.description %}
+            <p class="text-secondary" style="margin-bottom: 1rem;">{{ customer.description }}</p>
+            {% endif %}
+            <div class="flex" style="gap: 0.5rem;">
+                <a href="/customers/{{ customer.id }}" class="icon-btn" title="View">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
+                <a href="/customers/edit/{{ customer.id }}" class="icon-btn" title="Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </a>
+                <form action="/customers/delete/{{ customer.id }}" method="post" onsubmit="return confirm('Delete {{ customer.name }}?')" style="display: inline;">
+                    <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted">No customers yet.</p>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}
