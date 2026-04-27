@@ -101,6 +101,16 @@ def get_notes(customer_id):
     return [dict(row) for row in notes]
 
 
+def get_tasks():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tasks ORDER BY completed ASC, created_at DESC")
+    tasks = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in tasks]
+
+
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -359,6 +369,76 @@ async def add_customer(name: str = Form(...), description: str = Form(""), email
         print("Error adding customer:", e)
 
     return RedirectResponse(url="/customers", status_code=303)
+
+
+@app.get("/tasks", response_class=HTMLResponse)
+def tasks(request: Request):
+    task_list = get_tasks()
+    return templates.TemplateResponse("tasks.html", {"request": request, "tasks": task_list})
+
+
+@app.post("/tasks/add")
+async def add_task(title: str = Form(...), description: str = Form(""), image: UploadFile = File(None)):
+    image_path = ""
+    if image and image.filename:
+        safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
+        image_path = f"images/{safe_filename}"
+        file_path = STATIC_DIR / image_path
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(image.file, f)
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO tasks (title, description, image) VALUES (?, ?, ?)", (title, description, image_path))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/tasks", status_code=303)
+
+
+@app.post("/tasks/toggle/{task_id}")
+def toggle_task(task_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE tasks SET completed = NOT completed WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/tasks", status_code=303)
+
+
+@app.post("/tasks/edit/{task_id}")
+async def edit_task(task_id: int, title: str = Form(...), description: str = Form(""), image: UploadFile = File(None)):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT image FROM tasks WHERE id = ?", (task_id,))
+    existing = cursor.fetchone()
+    image_path = existing["image"] if existing else ""
+
+    if image and image.filename:
+        if existing and existing["image"]:
+            old_file = STATIC_DIR / existing["image"]
+            if old_file.exists():
+                old_file.unlink()
+        safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
+        image_path = f"images/{safe_filename}"
+        file_path = STATIC_DIR / image_path
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(image.file, f)
+
+    cursor.execute("UPDATE tasks SET title = ?, description = ?, image = ? WHERE id = ?", (title, description, image_path, task_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/tasks", status_code=303)
+
+
+@app.post("/tasks/delete/{task_id}")
+def delete_task(task_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url="/tasks", status_code=303)
 
 
 @app.get("/health")

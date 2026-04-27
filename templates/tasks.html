@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Tasks - TIR{% endblock %}
+
+{% block content %}
+<main class="container" style="padding: 2rem 0;">
+    <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
+        <h1>Tasks</h1>
+    </div>
+
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem;">Add New Task</h3>
+        <form action="/tasks/add" method="post" enctype="multipart/form-data">
+            <div class="grid grid-2" style="gap: 1rem;">
+                <div class="form-group">
+                    <label for="title">Title *</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" name="description">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="image">Image</label>
+                    <input type="file" id="image" name="image" accept="image/*">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Task</button>
+        </form>
+    </div>
+
+    <div class="stack" style="gap: 1rem;">
+        {% for task in tasks %}
+        <div class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+                <form action="/tasks/toggle/{{ task.id }}" method="post">
+                    <button type="submit" style="background: none; border: none; cursor: pointer; padding: 0;">
+                        {% if task.completed %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        {% else %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                        {% endif %}
+                    </button>
+                </form>
+                {% if task.image %}
+                <img src="/static/{{ task.image }}" alt="" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm);">
+                {% endif %}
+                <div style="flex: 1;">
+                    <p style="margin: 0; font-weight: 500; {% if task.completed %}text-decoration: line-through; color: var(--text-muted);{% endif %}">{{ task.title }}</p>
+                    {% if task.description %}
+                    <p class="text-sm text-secondary" style="margin: 0.25rem 0 0 0;">{{ task.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex" style="gap: 0.25rem;">
+                <button type="button" class="icon-btn" onclick="document.getElementById('edit-{{ task.id }}').classList.toggle('hidden')" title="Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <form action="/tasks/delete/{{ task.id }}" method="post" onsubmit="return confirm('Delete this task?')">
+                    <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div id="edit-{{ task.id }}" class="card hidden" style="margin-top: -0.5rem; margin-bottom: 1rem;">
+            <form action="/tasks/edit/{{ task.id }}" method="post" enctype="multipart/form-data" class="stack" style="gap: 0.5rem;">
+                <div class="flex" style="gap: 0.5rem;">
+                    <div style="flex: 1;">
+                        <label for="edit-title-{{ task.id }}" class="text-sm">Title</label>
+                        <input type="text" id="edit-title-{{ task.id }}" name="title" value="{{ task.title }}" required style="width: 100%;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="edit-desc-{{ task.id }}" class="text-sm">Description</label>
+                        <input type="text" id="edit-desc-{{ task.id }}" name="description" value="{{ task.description or '' }}" style="width: 100%;">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-sm">Image</label>
+                    <input type="file" name="image" accept="image/*" style="width: 100%;">
+                    {% if task.image %}
+                    <p class="text-sm text-muted" style="margin-top: 0.25rem;">Current: {{ task.image }}</p>
+                    {% endif %}
+                </div>
+                <div class="flex" style="gap: 0.5rem;">
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('edit-{{ task.id }}').classList.add('hidden')">Cancel</button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <p class="text-muted">No tasks yet. Add one above!</p>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}
