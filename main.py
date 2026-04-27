@@ -103,7 +103,7 @@ def edit_customer(customer_id: int, request: Request):
 
 
 @app.post("/customers/edit/{customer_id}")
-async def update_customer(customer_id: int, name: str = Form(...), description: str = Form(""), image: UploadFile = File(None)):
+async def update_customer(customer_id: int, name: str = Form(...), description: str = Form(""), email: str = Form(""), image: UploadFile = File(None)):
     customer = get_customer(customer_id)
     if not customer:
         return RedirectResponse(url="/customers", status_code=303)
@@ -122,8 +122,8 @@ async def update_customer(customer_id: int, name: str = Form(...), description: 
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE customers SET name = ?, description = ?, image = ? WHERE id = ?",
-                   (name, description, image_path, customer_id))
+    cursor.execute("UPDATE customers SET name = ?, description = ?, email = ?, image = ? WHERE id = ?",
+                   (name, description, email, image_path, customer_id))
     conn.commit()
     conn.close()
 
@@ -149,15 +149,15 @@ def delete_customer(customer_id: int):
 
 
 @app.post("/customers/{customer_id}/contact/add")
-def add_contact(customer_id: int, contact_name: str = Form(...), phone: str = Form(...)):
+def add_contact(customer_id: int, contact_name: str = Form(...), phone: str = Form(...), email: str = Form("")):
     customer = get_customer(customer_id)
     if not customer:
         return RedirectResponse(url="/customers", status_code=303)
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO contacts (customer_id, name, phone) VALUES (?, ?, ?)",
-                   (customer_id, contact_name, phone))
+    cursor.execute("INSERT INTO contacts (customer_id, name, phone, email) VALUES (?, ?, ?, ?)",
+                   (customer_id, contact_name, phone, email))
     conn.commit()
     conn.close()
 
@@ -175,18 +175,18 @@ def delete_contact(customer_id: int, contact_id: int):
 
 
 @app.post("/customers/{customer_id}/contact/edit/{contact_id}")
-def edit_contact(customer_id: int, contact_id: int, contact_name: str = Form(...), phone: str = Form(...)):
+def edit_contact(customer_id: int, contact_id: int, contact_name: str = Form(...), phone: str = Form(...), email: str = Form("")):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE contacts SET name = ?, phone = ? WHERE id = ? AND customer_id = ?",
-                   (contact_name, phone, contact_id, customer_id))
+    cursor.execute("UPDATE contacts SET name = ?, phone = ?, email = ? WHERE id = ? AND customer_id = ?",
+                   (contact_name, phone, email, contact_id, customer_id))
     conn.commit()
     conn.close()
     return RedirectResponse(url=f"/customers/{customer_id}", status_code=303)
 
 
 @app.post("/customers/add")
-async def add_customer(name: str = Form(...), description: str = Form(""), image: UploadFile = File(None)):
+async def add_customer(name: str = Form(...), description: str = Form(""), email: str = Form(""), image: UploadFile = File(None)):
     image_path = None
     if image and image.filename:
         safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
@@ -197,8 +197,8 @@ async def add_customer(name: str = Form(...), description: str = Form(""), image
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO customers (name, image, description) VALUES (?, ?, ?)",
-                   (name, image_path, description))
+    cursor.execute("INSERT INTO customers (name, image, description, email) VALUES (?, ?, ?, ?)",
+                   (name, image_path, description, email))
     conn.commit()
     conn.close()
 

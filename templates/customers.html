@@ -27,6 +27,10 @@
                 <input type="text" id="name" name="name" required>
             </div>
             <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email">
+            </div>
+            <div class="form-group">
                 <label for="image">Image</label>
                 <input type="file" id="image" name="image" accept="image/*">
             </div>
@@ -130,13 +134,20 @@ function setView(view) {
         listView.classList.add('hidden');
         tileBtn.classList.add('active');
         listBtn.classList.remove('active');
+        localStorage.setItem('customerView', 'tile');
     } else {
         tileView.classList.add('hidden');
         listView.classList.remove('hidden');
         tileBtn.classList.remove('active');
         listBtn.classList.add('active');
+        localStorage.setItem('customerView', 'list');
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const savedView = localStorage.getItem('customerView') || 'tile';
+    setView(savedView);
+});
 </script>
 
 <style>

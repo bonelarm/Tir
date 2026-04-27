@@ -18,6 +18,12 @@
                 <div style="width: 100%; height: 250px; background: var(--bg-elevated); border-radius: var(--radius-lg); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">No Image</div>
                 {% endif %}
                 <h2>{{ customer.name }}</h2>
+                {% if customer.email and customer.email.strip() %}
+                <a href="mailto:{{ customer.email }}" class="text-secondary" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    {{ customer.email }}
+                </a>
+                {% endif %}
                 {% if customer.description %}
                 <p class="text-secondary">{{ customer.description }}</p>
                 {% endif %}
@@ -44,6 +50,9 @@
                         <div class="form-group" style="margin-bottom: 0.5rem;">
                             <input type="text" name="phone" placeholder="Phone number" required>
                         </div>
+                        <div class="form-group" style="margin-bottom: 0.5rem;">
+                            <input type="email" name="email" placeholder="Email (optional)">
+                        </div>
                         <div class="flex" style="gap: 0.5rem;">
                             <button type="submit" class="btn btn-sm btn-primary">Save</button>
                             <button type="button" class="btn btn-sm btn-ghost" onclick="document.getElementById('addContact').classList.add('hidden')">Cancel</button>
@@ -53,31 +62,40 @@
 
                 <div class="stack">
                     {% for contact in contacts %}
-                    <div id="contact-{{ contact.id }}" class="contact-item flex justify-between items-center" style="padding: 0.75rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
-                        <div class="contact-view">
-                            <p style="margin-bottom: 0; color: var(--text-primary); font-weight: 500;">{{ contact.name }}</p>
-                            <p style="margin-bottom: 0;" class="text-sm text-secondary">{{ contact.phone }}</p>
+                    <div id="contact-{{ contact.id }}" class="contact-item" style="padding: 0.75rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
+                        <div class="flex justify-between items-center">
+                            <div class="contact-view">
+                                <p style="margin-bottom: 0; color: var(--text-primary); font-weight: 500;">{{ contact.name }}</p>
+                                <p style="margin-bottom: 0;" class="text-sm text-secondary">{{ contact.phone }}</p>
+                                {% if contact.email %}
+                                <a href="mailto:{{ contact.email }}" class="text-sm" style="display: flex; align-items: center; gap: 0.25rem; margin-top: 0.25rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                    {{ contact.email }}
+                                </a>
+                                {% endif %}
+                            </div>
+                            <div class="contact-actions flex" style="gap: 0.25rem;">
+                                <button type="button" class="icon-btn" onclick="toggleEdit({{ contact.id }})" title="Edit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <form action="/customers/{{ customer.id }}/contact/delete/{{ contact.id }}" method="post">
+                                    <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
-                        <div class="contact-edit hidden">
-                            <form action="/customers/{{ customer.id }}/contact/edit/{{ contact.id }}" method="post" class="flex" style="gap: 0.5rem;">
-                                <input type="text" name="contact_name" value="{{ contact.name }}" required style="width: 120px;">
-                                <input type="text" name="phone" value="{{ contact.phone }}" required style="width: 120px;">
-                                <button type="submit" class="icon-btn" title="Save">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                </button>
-                                <button type="button" class="icon-btn" onclick="toggleEdit({{ contact.id }})" title="Cancel">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                </button>
-                            </form>
-                        </div>
-                        <div class="contact-actions flex" style="gap: 0.25rem;">
-                            <button type="button" class="icon-btn" onclick="toggleEdit({{ contact.id }})" title="Edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            </button>
-                            <form action="/customers/{{ customer.id }}/contact/delete/{{ contact.id }}" method="post">
-                                <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                </button>
+                        <div class="contact-edit hidden" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+                            <form action="/customers/{{ customer.id }}/contact/edit/{{ contact.id }}" method="post" class="stack">
+                                <div class="flex" style="gap: 0.5rem;">
+                                    <input type="text" name="contact_name" value="{{ contact.name }}" required style="flex: 1;">
+                                    <input type="text" name="phone" value="{{ contact.phone }}" required style="flex: 1;">
+                                </div>
+                                <input type="email" name="email" value="{{ contact.email or '' }}" placeholder="Email (optional)">
+                                <div class="flex" style="gap: 0.5rem;">
+                                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                    <button type="button" class="btn btn-sm btn-ghost" onclick="toggleEdit({{ contact.id }})">Cancel</button>
+                                </div>
                             </form>
                         </div>
                     </div>
