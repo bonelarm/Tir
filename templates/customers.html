@@ -19,24 +19,68 @@
         </div>
     </div>
 
+    <div class="flex" style="gap: 1rem; margin-bottom: 1.5rem;">
+        <input type="text" id="searchInput" placeholder="Search customers..." value="{{ search }}" style="flex: 1; max-width: 300px;" onkeyup="handleSearch(event)">
+        <select id="sortSelect" style="width: 150px;" onchange="handleSort()">
+            <option value="name_asc" {% if sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+            <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+            <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>Oldest</option>
+            <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Newest</option>
+        </select>
+        <a href="/customers/export" class="btn btn-ghost" title="Export CSV">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export
+        </a>
+        <button class="btn btn-ghost" onclick="document.getElementById('importForm').classList.toggle('hidden')" title="Import CSV">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import
+        </button>
+    </div>
+
+    <div id="importForm" class="card hidden" style="margin-bottom: 1rem;">
+        <h3 style="margin-bottom: 1rem;">Import Customers from CSV</h3>
+        <form action="/customers/import" method="post" enctype="multipart/form-data">
+            <div class="flex" style="gap: 1rem; align-items: center;">
+                <input type="file" name="file" accept=".csv" required>
+                <button type="submit" class="btn btn-primary">Import</button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('importForm').classList.add('hidden')">Cancel</button>
+            </div>
+            <p class="text-sm text-muted" style="margin-top: 0.5rem;">Required columns: Name. Optional: Email, Phone, Description, Address, Company, Website</p>
+        </form>
+    </div>
+
     <div id="addForm" class="card hidden" style="margin-bottom: 2rem;">
         <h3 style="margin-bottom: 1rem;">Add New Customer</h3>
         <form action="/customers/add" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="name">Name *</label>
-                <input type="text" id="name" name="name" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email">
-            </div>
-            <div class="form-group">
-                <label for="image">Image</label>
-                <input type="file" id="image" name="image" accept="image/*">
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" name="description" rows="3"></textarea>
+            <div class="grid grid-2" style="gap: 1rem;">
+                <div class="form-group">
+                    <label for="add_name">Name *</label>
+                    <input type="text" id="add_name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="add_email">Email</label>
+                    <input type="email" id="add_email" name="email">
+                </div>
+                <div class="form-group">
+                    <label for="add_company">Company</label>
+                    <input type="text" id="add_company" name="company">
+                </div>
+                <div class="form-group">
+                    <label for="add_website">Website</label>
+                    <input type="url" id="add_website" name="website" placeholder="https://">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="add_address">Address</label>
+                    <input type="text" id="add_address" name="address">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="add_image">Image</label>
+                    <input type="file" id="add_image" name="image" accept="image/*">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="add_description">Description</label>
+                    <textarea id="add_description" name="description" rows="2"></textarea>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary">Save</button>
             <button type="button" class="btn btn-ghost" onclick="document.getElementById('addForm').classList.add('hidden')">Cancel</button>
@@ -45,15 +89,24 @@
 
     <div id="tileView" class="grid grid-3">
         {% for customer in customers %}
-        <div class="card" style="position: relative;">
+        <div class="card">
             {% if customer.image %}
             <img src="/static/{{ customer.image }}" alt="{{ customer.name }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: 1rem;">
             {% else %}
             <div style="width: 100%; height: 150px; background: var(--bg-elevated); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">No Image</div>
             {% endif %}
             <h3>{{ customer.name }}</h3>
+            {% if customer.company %}
+            <p class="text-sm text-secondary" style="margin-bottom: 0.25rem;">{{ customer.company }}</p>
+            {% endif %}
+            {% if customer.email %}
+            <a href="mailto:{{ customer.email }}" class="text-sm" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                {{ customer.email }}
+            </a>
+            {% endif %}
             {% if customer.description %}
-            <p class="text-secondary" style="margin-bottom: 1rem;">{{ customer.description }}</p>
+            <p class="text-sm text-secondary" style="margin-bottom: 1rem;">{{ customer.description[:80] }}{% if customer.description|length > 80 %}...{% endif %}</p>
             {% endif %}
             <div class="flex" style="gap: 0.5rem;">
                 <a href="/customers/{{ customer.id }}" class="icon-btn" title="View">
@@ -70,7 +123,7 @@
             </div>
         </div>
         {% else %}
-        <p class="text-muted">No customers yet.</p>
+        <p class="text-muted">No customers found.</p>
         {% endfor %}
     </div>
 
@@ -80,7 +133,8 @@
                 <tr>
                     <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Image</th>
                     <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Name</th>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Description</th>
+                    <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Company</th>
+                    <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Email</th>
                     <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Actions</th>
                 </tr>
             </thead>
@@ -95,7 +149,8 @@
                         {% endif %}
                     </td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);">{{ customer.name }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);" class="text-secondary">{{ customer.description or '-' }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);" class="text-secondary">{{ customer.company or '-' }}</td>
+                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);" class="text-secondary">{{ customer.email or '-' }}</td>
                     <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);">
                         <div class="flex" style="gap: 0.25rem;">
                             <a href="/customers/{{ customer.id }}" class="icon-btn" title="View">
@@ -114,7 +169,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" style="padding: 1rem; text-align: center; color: var(--text-muted);">No customers yet.</td>
+                    <td colspan="5" style="padding: 1rem; text-align: center; color: var(--text-muted);">No customers found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -142,6 +197,20 @@ function setView(view) {
         listBtn.classList.add('active');
         localStorage.setItem('customerView', 'list');
     }
+}
+
+function handleSearch(event) {
+    if (event.key === 'Enter') {
+        const search = event.target.value;
+        const sort = document.getElementById('sortSelect').value;
+        window.location.href = `/customers?search=${encodeURIComponent(search)}&sort=${sort}`;
+    }
+}
+
+function handleSort() {
+    const search = document.getElementById('searchInput').value;
+    const sort = document.getElementById('sortSelect').value;
+    window.location.href = `/customers?search=${encodeURIComponent(search)}&sort=${sort}`;
 }
 
 document.addEventListener('DOMContentLoaded', function() {

@@ -1,7 +1,9 @@
 import sqlite3
+import csv
+import io
 from pathlib import Path
-from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Form, UploadFile, File, Query
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import shutil
@@ -39,11 +41,31 @@ def get_db_status():
         return {"status": "error", "customer_count": 0}
 
 
-def get_customers():
+def get_customers(search: str = "", sort: str = "name_asc"):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM customers ORDER BY id DESC")
+    
+    query = "SELECT * FROM customers WHERE 1=1"
+    params = []
+    
+    if search:
+        search_term = f"%{search}%"
+        query += " AND (name LIKE ? OR email LIKE ? OR description LIKE ? OR company LIKE ?)"
+        params.extend([search_term, search_term, search_term, search_term])
+    
+    if sort == "name_asc":
+        query += " ORDER BY name ASC"
+    elif sort == "name_desc":
+        query += " ORDER BY name DESC"
+    elif sort == "date_asc":
+        query += " ORDER BY id ASC"
+    elif sort == "date_desc":
+        query += " ORDER BY id DESC"
+    else:
+        query += " ORDER BY name ASC"
+    
+    cursor.execute(query, params)
     customers = cursor.fetchall()
     conn.close()
     return [dict(row) for row in customers]
@@ -69,6 +91,16 @@ def get_contacts(customer_id):
     return [dict(row) for row in contacts]
 
 
+def get_notes(customer_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM customer_notes WHERE customer_id = ? ORDER BY created_at DESC", (customer_id,))
+    notes = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in notes]
+
+
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -80,9 +112,88 @@ def status(request: Request):
 
 
 @app.get("/customers", response_class=HTMLResponse)
-def customers(request: Request):
-    customer_list = get_customers()
-    return templates.TemplateResponse("customers.html", {"request": request, "customers": customer_list})
+def customers(request: Request, search: str = "", sort: str = "name_asc"):
+    customer_list = get_customers(search, sort)
+    return templates.TemplateResponse("customers.html", {
+        "request": request,
+        "customers": customer_list,
+        "search": search,
+        "sort": sort
+    })
+
+
+@app.get("/customers/export")
+def export_customers():
+    customers = get_customers()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Name", "Email", "Phone", "Description", "Address", "Company", "Website"])
+    
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    for customer in customers:
+        cursor.execute("SELECT name, phone FROM contacts WHERE customer_id = ? LIMIT 1", (customer["id"],))
+        contact = cursor.fetchone()
+        phones = contact["phone"] if contact else ""
+        writer.writerow([
+            customer["name"],
+            customer["email"] or "",
+            phones,
+            customer["description"] or "",
+            customer["address"] or "",
+            customer["company"] or "",
+            customer["website"] or ""
+        ])
+    conn.close()
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=customers.csv"}
+    )
+
+
+@app.post("/customers/import")
+async def import_customers(file: UploadFile = File(...)):
+    if not file.filename.endswith('.csv'):
+        return RedirectResponse(url="/customers", status_code=303)
+    
+    content = await file.read()
+    try:
+        reader = csv.DictReader(io.StringIO(content.decode('utf-8')))
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        for row in reader:
+            name = row.get("Name", "").strip()
+            if name:
+                cursor.execute("""
+                    INSERT INTO customers (name, email, description, address, company, website)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    name,
+                    row.get("Email", "").strip(),
+                    row.get("Description", "").strip(),
+                    row.get("Address", "").strip(),
+                    row.get("Company", "").strip(),
+                    row.get("Website", "").strip()
+                ))
+                
+                customer_id = cursor.lastrowid
+                phone = row.get("Phone", "").strip()
+                if phone:
+                    cursor.execute("INSERT INTO contacts (customer_id, name, phone) VALUES (?, ?, ?)",
+                                   (customer_id, name, phone))
+        
+        conn.commit()
+        conn.close()
+    except:
+        pass
+    
+    return RedirectResponse(url="/customers", status_code=303)
 
 
 @app.get("/customers/{customer_id}", response_class=HTMLResponse)
@@ -91,7 +202,13 @@ def customer_detail(customer_id: int, request: Request):
     if not customer:
         return RedirectResponse(url="/customers", status_code=303)
     contacts = get_contacts(customer_id)
-    return templates.TemplateResponse("customer_detail.html", {"request": request, "customer": customer, "contacts": contacts})
+    notes = get_notes(customer_id)
+    return templates.TemplateResponse("customer_detail.html", {
+        "request": request,
+        "customer": customer,
+        "contacts": contacts,
+        "notes": notes
+    })
 
 
 @app.get("/customers/edit/{customer_id}", response_class=HTMLResponse)
@@ -103,7 +220,9 @@ def edit_customer(customer_id: int, request: Request):
 
 
 @app.post("/customers/edit/{customer_id}")
-async def update_customer(customer_id: int, name: str = Form(...), description: str = Form(""), email: str = Form(""), image: UploadFile = File(None)):
+async def update_customer(customer_id: int, name: str = Form(...), email: str = Form(""),
+                          company: str = Form(""), website: str = Form(""), address: str = Form(""),
+                          description: str = Form(""), image: UploadFile = File(None)):
     customer = get_customer(customer_id)
     if not customer:
         return RedirectResponse(url="/customers", status_code=303)
@@ -122,8 +241,10 @@ async def update_customer(customer_id: int, name: str = Form(...), description: 
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE customers SET name = ?, description = ?, email = ?, image = ? WHERE id = ?",
-                   (name, description, email, image_path, customer_id))
+    cursor.execute("""
+        UPDATE customers SET name = ?, description = ?, email = ?, address = ?, company = ?, website = ?, image = ?
+        WHERE id = ?
+    """, (name, description, email, address, company, website, image_path, customer_id))
     conn.commit()
     conn.close()
 
@@ -141,6 +262,7 @@ def delete_customer(customer_id: int):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM contacts WHERE customer_id = ?", (customer_id,))
+    cursor.execute("DELETE FROM customer_notes WHERE customer_id = ?", (customer_id,))
     cursor.execute("DELETE FROM customers WHERE id = ?", (customer_id,))
     conn.commit()
     conn.close()
@@ -185,9 +307,37 @@ def edit_contact(customer_id: int, contact_id: int, contact_name: str = Form(...
     return RedirectResponse(url=f"/customers/{customer_id}", status_code=303)
 
 
+@app.post("/customers/{customer_id}/note/add")
+def add_note(customer_id: int, note: str = Form(...)):
+    customer = get_customer(customer_id)
+    if not customer:
+        return RedirectResponse(url="/customers", status_code=303)
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO customer_notes (customer_id, note) VALUES (?, ?)",
+                   (customer_id, note))
+    conn.commit()
+    conn.close()
+
+    return RedirectResponse(url=f"/customers/{customer_id}", status_code=303)
+
+
+@app.post("/customers/{customer_id}/note/delete/{note_id}")
+def delete_note(customer_id: int, note_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM customer_notes WHERE id = ? AND customer_id = ?", (note_id, customer_id))
+    conn.commit()
+    conn.close()
+    return RedirectResponse(url=f"/customers/{customer_id}", status_code=303)
+
+
 @app.post("/customers/add")
-async def add_customer(name: str = Form(...), description: str = Form(""), email: str = Form(""), image: UploadFile = File(None)):
-    image_path = None
+async def add_customer(name: str = Form(...), description: str = Form(""), email: str = Form(""),
+                       address: str = Form(""), company: str = Form(""), website: str = Form(""),
+                       image: UploadFile = File(None)):
+    image_path = ""
     if image and image.filename:
         safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
         image_path = f"images/{safe_filename}"
@@ -195,12 +345,18 @@ async def add_customer(name: str = Form(...), description: str = Form(""), email
         with open(file_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO customers (name, image, description, email) VALUES (?, ?, ?, ?)",
-                   (name, image_path, description, email))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO customers (name, image, description, email, address, company, website)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (name, image_path, description, email, address, company, website))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        # In case of DB errors (eg. NOT NULL constraints), gracefully continue by not blocking the request
+        print("Error adding customer:", e)
 
     return RedirectResponse(url="/customers", status_code=303)
 

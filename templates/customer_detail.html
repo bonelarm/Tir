@@ -10,27 +10,84 @@
     </a>
 
     <div class="grid grid-2" style="gap: 2rem;">
-        <div>
+        <div class="stack">
             <div class="card">
                 {% if customer.image %}
                 <img src="/static/{{ customer.image }}" alt="{{ customer.name }}" style="width: 100%; height: 250px; object-fit: cover; border-radius: var(--radius-lg); margin-bottom: 1rem;">
                 {% else %}
                 <div style="width: 100%; height: 250px; background: var(--bg-elevated); border-radius: var(--radius-lg); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">No Image</div>
                 {% endif %}
-                <h2>{{ customer.name }}</h2>
+                <h2 style="margin-bottom: 0.5rem;">{{ customer.name }}</h2>
+                
+                {% if customer.company %}
+                <p class="text-secondary" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9h.01"/><path d="M9 12h.01"/><path d="M9 15h.01"/><path d="M9 18h.01"/></svg>
+                    {{ customer.company }}
+                </p>
+                {% endif %}
+                
                 {% if customer.email and customer.email.strip() %}
                 <a href="mailto:{{ customer.email }}" class="text-secondary" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                     {{ customer.email }}
                 </a>
                 {% endif %}
-                {% if customer.description %}
-                <p class="text-secondary">{{ customer.description }}</p>
+                
+                {% if customer.website and customer.website.strip() %}
+                <a href="{{ customer.website }}" target="_blank" class="text-secondary" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    {{ customer.website }}
+                </a>
                 {% endif %}
+                
+                {% if customer.address and customer.address.strip() %}
+                <p class="text-secondary" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    {{ customer.address }}
+                </p>
+                {% endif %}
+                
+                {% if customer.description %}
+                <p class="text-secondary" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">{{ customer.description }}</p>
+                {% endif %}
+                
                 <div class="flex" style="margin-top: 1rem; gap: 0.5rem;">
                     <a href="/customers/edit/{{ customer.id }}" class="icon-btn" title="Edit">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="flex justify-between items-center" style="margin-bottom: 1rem;">
+                    <h3>Notes</h3>
+                    <button class="btn btn-sm btn-primary" onclick="document.getElementById('addNote').classList.toggle('hidden')">Add</button>
+                </div>
+                
+                <div id="addNote" class="hidden" style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
+                    <form action="/customers/{{ customer.id }}/note/add" method="post" class="stack">
+                        <textarea name="note" placeholder="Write a note..." rows="3" required></textarea>
+                        <div class="flex" style="gap: 0.5rem;">
+                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                            <button type="button" class="btn btn-sm btn-ghost" onclick="document.getElementById('addNote').classList.add('hidden')">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="stack">
+                    {% for note in notes %}
+                    <div style="padding: 0.75rem; background: var(--bg-elevated); border-radius: var(--radius-md); position: relative;">
+                        <p style="margin-bottom: 0.5rem;">{{ note.note }}</p>
+                        <p class="text-xs text-muted" style="margin-bottom: 0;">{{ note.created_at }}</p>
+                        <form action="/customers/{{ customer.id }}/note/delete/{{ note.id }}" method="post" style="position: absolute; top: 0.5rem; right: 0.5rem;">
+                            <button type="submit" class="icon-btn icon-btn-delete" style="width: 28px; height: 28px;" title="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-sm">No notes yet.</p>
+                    {% endfor %}
                 </div>
             </div>
         </div>

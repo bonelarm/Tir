@@ -287,6 +287,7 @@ input[type="text"],
 input[type="email"],
 input[type="password"],
 input[type="file"],
+input[type="url"],
 textarea,
 select {
   width: 100%;
@@ -354,6 +355,9 @@ textarea {
 .block { display: block; }
 .inline-block { display: inline-block; }
 
+.w-full { width: 100%; }
+.text-center { text-align: center; }
+
 /* ─── Icon Buttons ─── */
 .icon-btn {
   display: inline-flex;
@@ -381,8 +385,24 @@ textarea {
   color: white;
 }
 
-.w-full { width: 100%; }
-.text-center { text-align: center; }
+/* ─── View Toggle ─── */
+.view-toggle {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+}
+
+.view-toggle .icon-btn {
+  background: transparent;
+  border: none;
+}
+
+.view-toggle .icon-btn.active {
+  background: var(--accent);
+  color: white;
+}
 
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
