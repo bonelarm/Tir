@@ -9,6 +9,4 @@ tir.db
 *.svg
 *.webp
 *.ico
-/static/images/*
-/images/*
 test.html
