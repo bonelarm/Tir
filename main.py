@@ -146,10 +146,17 @@ def get_tasks():
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT t.*, c.name as customer_name, i.name as item_name 
-        FROM tasks t 
-        LEFT JOIN customers c ON t.customer_id = c.id
-        LEFT JOIN items i ON t.item_id = i.id
+        SELECT t.*,
+            GROUP_CONCAT(DISTINCT c.id) as customer_ids,
+            GROUP_CONCAT(DISTINCT c.name) as customer_names,
+            GROUP_CONCAT(DISTINCT i.id) as item_ids,
+            GROUP_CONCAT(DISTINCT i.name) as item_names
+        FROM tasks t
+        LEFT JOIN task_customers tc ON t.id = tc.task_id
+        LEFT JOIN customers c ON tc.customer_id = c.id
+        LEFT JOIN task_items ti ON t.id = ti.task_id
+        LEFT JOIN items i ON ti.item_id = i.id
+        GROUP BY t.id
         ORDER BY t.position ASC, t.created_at DESC
     """)
     tasks = cursor.fetchall()
@@ -466,7 +473,7 @@ def tasks(request: Request):
 
 
 @app.post("/tasks/add")
-async def add_task(title: str = Form(...), description: str = Form(""), column_name: str = Form("To Do"), customer_id: str = Form(""), item_id: str = Form(""), image: UploadFile = File(None)):
+async def add_task(title: str = Form(...), description: str = Form(""), column_name: str = Form("To Do"), customer_ids: list[str] = Form([]), item_ids: list[str] = Form([]), image: UploadFile = File(None)):
     image_path = ""
     if image and image.filename:
         safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
@@ -475,14 +482,20 @@ async def add_task(title: str = Form(...), description: str = Form(""), column_n
         with open(file_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
 
-    cust_id = int(customer_id) if customer_id and customer_id.isdigit() else None
-    itm_id = int(item_id) if item_id and item_id.isdigit() else None
-    
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT COALESCE(MAX(position), 0) + 1 as pos FROM tasks WHERE column_name = ?", (column_name,))
     pos = cursor.fetchone()[0]
-    cursor.execute("INSERT INTO tasks (title, description, image, column_name, position, customer_id, item_id) VALUES (?, ?, ?, ?, ?, ?, ?)", (title, description, image_path, column_name, pos, cust_id, itm_id))
+    cursor.execute("INSERT INTO tasks (title, description, image, column_name, position) VALUES (?, ?, ?, ?, ?)", (title, description, image_path, column_name, pos))
+    task_id = cursor.lastrowid
+
+    for cid in customer_ids:
+        if cid.isdigit():
+            cursor.execute("INSERT OR IGNORE INTO task_customers (task_id, customer_id) VALUES (?, ?)", (task_id, int(cid)))
+    for iid in item_ids:
+        if iid.isdigit():
+            cursor.execute("INSERT OR IGNORE INTO task_items (task_id, item_id) VALUES (?, ?)", (task_id, int(iid)))
+
     conn.commit()
     conn.close()
     return RedirectResponse(url="/tasks", status_code=303)
@@ -511,11 +524,11 @@ def toggle_task(task_id: int):
 
 
 @app.post("/tasks/edit/{task_id}")
-async def edit_task(task_id: int, title: str = Form(...), description: str = Form(""), customer_id: str = Form(""), item_id: str = Form(""), image: UploadFile = File(None)):
+async def edit_task(task_id: int, title: str = Form(...), description: str = Form(""), customer_ids: list[str] = Form([]), item_ids: list[str] = Form([]), image: UploadFile = File(None)):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT image, customer_id, item_id FROM tasks WHERE id = ?", (task_id,))
+    cursor.execute("SELECT image FROM tasks WHERE id = ?", (task_id,))
     existing = cursor.fetchone()
     image_path = existing["image"] if existing else ""
 
@@ -530,10 +543,17 @@ async def edit_task(task_id: int, title: str = Form(...), description: str = For
         with open(file_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
 
-    cust_id = int(customer_id) if customer_id and customer_id.isdigit() else None
-    itm_id = int(item_id) if item_id and item_id.isdigit() else None
-    
-    cursor.execute("UPDATE tasks SET title = ?, description = ?, image = ?, customer_id = ?, item_id = ? WHERE id = ?", (title, description, image_path, cust_id, itm_id, task_id))
+    cursor.execute("UPDATE tasks SET title = ?, description = ?, image = ? WHERE id = ?", (title, description, image_path, task_id))
+
+    cursor.execute("DELETE FROM task_customers WHERE task_id = ?", (task_id,))
+    cursor.execute("DELETE FROM task_items WHERE task_id = ?", (task_id,))
+    for cid in customer_ids:
+        if cid.isdigit():
+            cursor.execute("INSERT OR IGNORE INTO task_customers (task_id, customer_id) VALUES (?, ?)", (task_id, int(cid)))
+    for iid in item_ids:
+        if iid.isdigit():
+            cursor.execute("INSERT OR IGNORE INTO task_items (task_id, item_id) VALUES (?, ?)", (task_id, int(iid)))
+
     conn.commit()
     conn.close()
     return RedirectResponse(url="/tasks", status_code=303)

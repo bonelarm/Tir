@@ -51,6 +51,29 @@ cursor.execute('''
     )
 ''')
 
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS task_customers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        customer_id INTEGER NOT NULL,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+        UNIQUE(task_id, customer_id)
+    )
+''')
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS task_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        item_id INTEGER NOT NULL,
+        quantity INTEGER DEFAULT 1,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+        UNIQUE(task_id, item_id)
+    )
+''')
+
 cursor.execute("INSERT INTO status_log (status) VALUES ('healthy')")
 conn.commit()
 conn.close()

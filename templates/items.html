@@ -4,14 +4,23 @@
 
 {% block content %}
 <main class="container" style="padding: 2rem 0;">
-    <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
-        <h1>Items</h1>
-        <button class="btn btn-primary" onclick="document.getElementById('addForm').classList.toggle('hidden')">Add Item</button>
+    <div class="items-header">
+        <div class="items-header-left">
+            <h1>Items</h1>
+            <span class="items-count">{{ items|length }} item{{ 's' if items|length != 1 else '' }}</span>
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('addForm').classList.toggle('hidden')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Item
+        </button>
     </div>
 
-    <div class="flex" style="gap: 1rem; margin-bottom: 1.5rem;">
-        <input type="text" id="searchInput" placeholder="Search items..." value="{{ search }}" style="flex: 1; max-width: 300px;" onkeyup="handleSearch(event)">
-        <select id="sortSelect" style="width: 150px;" onchange="handleSort()">
+    <div class="items-toolbar">
+        <div class="search-box">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" placeholder="Search items..." value="{{ search }}" onkeyup="handleSearch(event)">
+        </div>
+        <select id="sortSelect" onchange="handleSort()">
             <option value="name_asc" {% if sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
             <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
             <option value="quantity_asc" {% if sort == 'quantity_asc' %}selected{% endif %}>Quantity (Low to High)</option>
@@ -19,8 +28,13 @@
         </select>
     </div>
 
-    <div id="addForm" class="card hidden" style="margin-bottom: 2rem; max-width: 600px;">
-        <h3 style="margin-bottom: 1rem;">Add New Item</h3>
+    <div id="addForm" class="add-form-card hidden">
+        <div class="add-form-header">
+            <h3>Add New Item</h3>
+            <button type="button" class="icon-btn" onclick="document.getElementById('addForm').classList.add('hidden')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
         <form action="/items/add" method="post" enctype="multipart/form-data">
             <div class="grid grid-2" style="gap: 1rem;">
                 <div class="form-group">
@@ -29,7 +43,7 @@
                 </div>
                 <div class="form-group">
                     <label for="quantity">Quantity</label>
-                    <input type="number" id="quantity" name="quantity" value="0" min="0" style="background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border); padding: 0.75rem; border-radius: var(--radius-md); width: 100%;">
+                    <input type="number" id="quantity" name="quantity" value="0" min="0">
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <label for="description">Description</label>
@@ -40,37 +54,55 @@
                     <input type="file" id="image" name="image" accept="image/*">
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary">Save</button>
-            <button type="button" class="btn btn-ghost" onclick="document.getElementById('addForm').classList.add('hidden')">Cancel</button>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Item</button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('addForm').classList.add('hidden')">Cancel</button>
+            </div>
         </form>
     </div>
 
-    <div id="tileView" class="grid grid-3">
+    <div id="tileView" class="items-grid">
         {% for item in items %}
-        <div class="card">
-            {% if item.image %}
-            <img src="/static/{{ item.image }}" alt="{{ item.name }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: 1rem;">
-            {% else %}
-            <div style="width: 100%; height: 150px; background: var(--bg-elevated); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">No Image</div>
-            {% endif %}
-            <h3>{{ item.name }}</h3>
-            {% if item.description %}
-            <p class="text-sm text-secondary" style="margin-bottom: 0.5rem;">{{ item.description[:80] }}{% if item.description|length > 80 %}...{% endif %}</p>
-            {% endif %}
-            <p class="text-sm"><strong>Qty:</strong> {{ item.quantity }}</p>
-            <div class="flex" style="gap: 0.5rem; margin-top: 0.5rem;">
-                <a href="/items/edit/{{ item.id }}" class="icon-btn" title="Edit">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </a>
-                <form action="/items/delete/{{ item.id }}" method="post" onsubmit="return confirm('Delete {{ item.name }}?')" style="display: inline;">
-                    <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    </button>
-                </form>
+        <div class="item-card">
+            <div class="item-card-image">
+                {% if item.image %}
+                <img src="/static/{{ item.image }}" alt="{{ item.name }}">
+                {% else %}
+                <div class="item-card-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                {% endif %}
+                <div class="item-card-overlay">
+                    <a href="/items/edit/{{ item.id }}" class="icon-btn" title="Edit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </a>
+                    <form action="/items/delete/{{ item.id }}" method="post" onsubmit="return confirm('Delete {{ item.name }}?')" style="display: inline;">
+                        <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="item-card-body">
+                <h3 class="item-card-title">{{ item.name }}</h3>
+                {% if item.description %}
+                <p class="item-card-desc">{{ item.description[:80] }}{% if item.description|length > 80 %}...{% endif %}</p>
+                {% endif %}
+                <div class="item-card-footer">
+                    <span class="item-card-qty">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        {{ item.quantity }} in stock
+                    </span>
+                </div>
             </div>
         </div>
         {% else %}
-        <p class="text-muted">No items found.</p>
+        <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <h3>No items yet</h3>
+            <p>Add your first item to get started</p>
+            <button class="btn btn-primary" onclick="document.getElementById('addForm').classList.remove('hidden')">Add Item</button>
+        </div>
         {% endfor %}
     </div>
 </main>

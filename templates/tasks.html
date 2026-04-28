@@ -52,18 +52,40 @@
                         <input type="hidden" name="column_name" value="{{ column.name }}">
                         <input type="text" name="title" placeholder="Task title" required style="padding: 0.5rem; font-size: 0.875rem;">
                         <input type="text" name="description" placeholder="Description (optional)" style="padding: 0.5rem; font-size: 0.875rem;">
-                        <select name="customer_id" style="padding: 0.5rem; font-size: 0.875rem;">
-                            <option value="">No Customer</option>
-                            {% for customer in customers %}
-                            <option value="{{ customer.id }}">{{ customer.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <select name="item_id" style="padding: 0.5rem; font-size: 0.875rem;">
-                            <option value="">No Item</option>
-                            {% for item in items %}
-                            <option value="{{ item.id }}">{{ item.name }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="multi-select" style="margin-bottom: 0.5rem;">
+                            <div class="multi-select-header" onclick="toggleMultiSelect(this)">
+                                <span class="multi-select-text">Select Customers</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="multi-select-dropdown hidden">
+                                <input type="text" class="multi-select-search" placeholder="Search..." onkeyup="filterMultiSelect(this)">
+                                <div class="multi-select-options">
+                                    {% for customer in customers %}
+                                    <label class="multi-select-option">
+                                        <input type="checkbox" name="customer_ids" value="{{ customer.id }}">
+                                        <span>{{ customer.name }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="multi-select" style="margin-bottom: 0.5rem;">
+                            <div class="multi-select-header" onclick="toggleMultiSelect(this)">
+                                <span class="multi-select-text">Select Items</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="multi-select-dropdown hidden">
+                                <input type="text" class="multi-select-search" placeholder="Search..." onkeyup="filterMultiSelect(this)">
+                                <div class="multi-select-options">
+                                    {% for item in items %}
+                                    <label class="multi-select-option">
+                                        <input type="checkbox" name="item_ids" value="{{ item.id }}">
+                                        <span>{{ item.name }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
                         <input type="file" name="image" accept="image/*" style="font-size: 0.75rem; padding: 0.25rem;">
                         <div class="flex" style="gap: 0.25rem;">
                             <button type="submit" class="btn btn-primary btn-sm">Add</button>
@@ -81,17 +103,19 @@
                     {% if task.description %}
                     <p class="text-sm text-secondary" style="margin-bottom: 0.5rem;">{{ task.description }}</p>
                     {% endif %}
-                    {% if task.customer_name %}
-                    <a href="/customers/{{ task.customer_id }}" class="text-sm" style="display: inline-flex; align-items: center; gap: 0.25rem; color: var(--accent-light); margin-bottom: 0.5rem;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        {{ task.customer_name }}
-                    </a>
+                    {% if task.customer_names %}
+                    <div class="task-tags">
+                        {% for name in task.customer_names.split(',') %}
+                        <span class="task-tag">{{ name }}</span>
+                        {% endfor %}
+                    </div>
                     {% endif %}
-                    {% if task.item_name %}
-                    <a href="/items" class="text-sm" style="display: inline-flex; align-items: center; gap: 0.25rem; color: var(--accent-light); margin-bottom: 0.5rem;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                        {{ task.item_name }}
-                    </a>
+                    {% if task.item_names %}
+                    <div class="task-tags">
+                        {% for name in task.item_names.split(',') %}
+                        <span class="task-tag">{{ name }}</span>
+                        {% endfor %}
+                    </div>
                     {% endif %}
                     <div class="task-actions">
                         <button type="button" class="icon-btn-sm" onclick="openTaskModal({{ task.id }})" title="View">
@@ -112,18 +136,40 @@
                         <input type="hidden" name="column_name" value="{{ column.name }}">
                         <input type="text" name="title" value="{{ task.title }}" required style="padding: 0.5rem; font-size: 0.875rem;">
                         <input type="text" name="description" value="{{ task.description or '' }}" placeholder="Description" style="padding: 0.5rem; font-size: 0.875rem;">
-                        <select name="customer_id" style="padding: 0.5rem; font-size: 0.875rem;">
-                            <option value="">No Customer</option>
-                            {% for customer in customers %}
-                            <option value="{{ customer.id }}" {% if task.customer_id == customer.id %}selected{% endif %}>{{ customer.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <select name="item_id" style="padding: 0.5rem; font-size: 0.875rem;">
-                            <option value="">No Item</option>
-                            {% for item in items %}
-                            <option value="{{ item.id }}" {% if task.item_id == item.id %}selected{% endif %}>{{ item.name }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="multi-select" style="margin-bottom: 0.5rem;">
+                            <div class="multi-select-header" onclick="toggleMultiSelect(this)">
+                                <span class="multi-select-text">Select Customers</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="multi-select-dropdown hidden">
+                                <input type="text" class="multi-select-search" placeholder="Search..." onkeyup="filterMultiSelect(this)">
+                                <div class="multi-select-options">
+                                    {% for customer in customers %}
+                                    <label class="multi-select-option">
+                                        <input type="checkbox" name="customer_ids" value="{{ customer.id }}" {% if task.customer_ids and customer.id|string in task.customer_ids.split(',') %}checked{% endif %}>
+                                        <span>{{ customer.name }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="multi-select" style="margin-bottom: 0.5rem;">
+                            <div class="multi-select-header" onclick="toggleMultiSelect(this)">
+                                <span class="multi-select-text">Select Items</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                            <div class="multi-select-dropdown hidden">
+                                <input type="text" class="multi-select-search" placeholder="Search..." onkeyup="filterMultiSelect(this)">
+                                <div class="multi-select-options">
+                                    {% for item in items %}
+                                    <label class="multi-select-option">
+                                        <input type="checkbox" name="item_ids" value="{{ item.id }}" {% if task.item_ids and item.id|string in task.item_ids.split(',') %}checked{% endif %}>
+                                        <span>{{ item.name }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
                         <input type="file" name="image" accept="image/*" style="font-size: 0.75rem; padding: 0.25rem;">
                         <div class="flex" style="gap: 0.25rem;">
                             <button type="submit" class="btn btn-primary btn-sm">Save</button>
@@ -151,9 +197,35 @@
 </div>
 
 <script>
+function toggleMultiSelect(header) {
+    const dropdown = header.nextElementSibling;
+    dropdown.classList.toggle('hidden');
+    if (!dropdown.classList.contains('hidden')) {
+        dropdown.querySelector('.multi-select-search').focus();
+    }
+}
+
+function filterMultiSelect(searchInput) {
+    const query = searchInput.value.toLowerCase();
+    const options = searchInput.parentElement.querySelectorAll('.multi-select-option');
+    options.forEach(opt => {
+        const text = opt.textContent.toLowerCase();
+        opt.style.display = text.includes(query) ? 'flex' : 'none';
+    });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('.multi-select-dropdown:not(.hidden)').forEach(dd => {
+        if (!dd.parentElement.contains(e.target)) {
+            dd.classList.add('hidden');
+        }
+    });
+});
+
 const taskData = {
 {% for task in tasks %}
-    {{ task.id }}: {title: "{{ task.title|e }}", description: "{{ task.description|e }}", image: "{{ task.image|e }}", column: "{{ task.column_name|e }}", created: "{{ task.created_at|e }}", customer_id: {{ task.customer_id or 'null' }}, customer_name: "{{ task.customer_name|e }}", item_id: {{ task.item_id or 'null' }}, item_name: "{{ task.item_name|e }}" },
+    {{ task.id }}: {title: "{{ task.title|e }}", description: "{{ task.description|e }}", image: "{{ task.image|e }}", column: "{{ task.column_name|e }}", created: "{{ task.created_at|e }}", customer_ids: "{{ task.customer_ids or '' }}", customer_names: "{{ task.customer_names|e }}", item_ids: "{{ task.item_ids or '' }}", item_names: "{{ task.item_names|e }}" },
 {% endfor %}
 };
 
@@ -176,11 +248,11 @@ function openTaskModal(taskId) {
     if (!task.image && !task.description) {
         html += '<p style="color: var(--text-muted);">No description</p>';
     }
-    if (task.customer_name) {
-        html += '<p style="margin-bottom: 1rem;"><strong>Customer:</strong> <a href="/customers/' + task.customer_id + '" style="color: var(--accent-light);">' + task.customer_name + '</a></p>';
+    if (task.customer_names) {
+        html += '<p style="margin-bottom: 1rem;"><strong>Customers:</strong> ' + task.customer_names.split(',').join(', ') + '</p>';
     }
-    if (task.item_name) {
-        html += '<p style="margin-bottom: 1rem;"><strong>Item:</strong> <a href="/items" style="color: var(--accent-light);">' + task.item_name + '</a></p>';
+    if (task.item_names) {
+        html += '<p style="margin-bottom: 1rem;"><strong>Items:</strong> ' + task.item_names.split(',').join(', ') + '</p>';
     }
     html += '<div class="flex" style="gap: 1rem; color: var(--text-muted); font-size: 0.875rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">';
     html += '<span><strong>Column:</strong> ' + task.column + '</span>';
@@ -263,6 +335,92 @@ document.addEventListener('dragend', function(e) {
 </script>
 
 <style>
+.multi-select {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+}
+
+.multi-select-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.multi-select-header:hover {
+    background: var(--bg-elevated);
+}
+
+.multi-select-text {
+    flex: 1;
+}
+
+.multi-select-dropdown {
+    border-top: 1px solid var(--border);
+    padding: 0.5rem;
+}
+
+.multi-select-search {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.multi-select-options {
+    max-height: 150px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.multi-select-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+}
+
+.multi-select-option:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.multi-select-option input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+}
+
+.task-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.task-tag {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+}
+
 .board {
     display: flex;
     gap: 1rem;

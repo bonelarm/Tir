@@ -11,3 +11,4 @@ tir.db
 *.ico
 /static/images/*
 /images/*
+test.html
