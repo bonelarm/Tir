@@ -4,14 +4,29 @@
 
 {% block content %}
 <main class="container" style="padding: 2rem 0;">
-    <a href="/items" class="btn btn-ghost" style="margin-bottom: 1rem;">
+    <a href="/items" class="btn btn-ghost" style="margin-bottom: 1.5rem;">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        Back
+        Back to Items
     </a>
 
-    <h1>Edit Item</h1>
-    <div class="card" style="max-width: 600px; margin-top: 1rem;">
+    <div class="edit-header" style="margin-bottom: 2rem;">
+        <h1>Edit Item</h1>
+        {% if item.image %}
+        <span class="items-count">{{ item.name }}</span>
+        {% endif %}
+    </div>
+
+    <div class="edit-form-card">
         <form action="/items/edit/{{ item.id }}" method="post" enctype="multipart/form-data">
+            {% if item.image %}
+            <div class="edit-image-preview">
+                <img src="/static/{{ item.image }}" alt="{{ item.name }}">
+                <div class="edit-image-overlay">
+                    <span class="text-sm text-muted">Current Image</span>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="grid grid-2" style="gap: 1rem;">
                 <div class="form-group">
                     <label for="name">Name *</label>
@@ -26,17 +41,94 @@
                     <textarea id="description" name="description" rows="3">{{ item.description or '' }}</textarea>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label for="image">Image</label>
+                    <label for="image">Replace Image</label>
                     <input type="file" id="image" name="image" accept="image/*">
                     {% if item.image %}
                     <p class="text-sm text-muted" style="margin-top: 0.5rem;">Current: {{ item.image }}</p>
-                    <img src="/static/{{ item.image }}" alt="" style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-sm); margin-top: 0.5rem;">
                     {% endif %}
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary">Save</button>
-            <a href="/items" class="btn btn-ghost">Cancel</a>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="/items" class="btn btn-ghost">Cancel</a>
+            </div>
         </form>
     </div>
+
+    {% if tasks %}
+    <div class="linked-tasks-card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3>Tasks using this Item</h3>
+            <a href="/tasks" class="btn btn-sm btn-ghost">View All Tasks</a>
+        </div>
+        <div class="tasks-list">
+            {% for task in tasks %}
+            <a href="/tasks" class="task-link">
+                <div class="task-status-dot" style="background: {% if task.column_name == 'Done' %}#22c55e{% elif task.column_name == 'In Progress' %}#f59e0b{% else %}#64748b{% endif %};"></div>
+                <span class="{% if task.completed %}text-muted{% endif %}">{{ task.title }}</span>
+                <span class="task-column-badge">{{ task.column_name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </main>
+
+<style>
+.linked-tasks-card {
+    margin-top: 1.5rem;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.card-header h3 {
+    margin: 0;
+}
+
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.task-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.15s;
+}
+
+.task-link:hover {
+    background: var(--bg-surface);
+    transform: translateX(4px);
+}
+
+.task-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.task-column-badge {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+</style>
 {% endblock %}

@@ -48,5 +48,81 @@
             </div>
         </form>
     </div>
+
+    {% if tasks %}
+    <div class="linked-tasks-card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3>Tasks for this Customer</h3>
+            <a href="/tasks" class="btn btn-sm btn-ghost">View All Tasks</a>
+        </div>
+        <div class="tasks-list">
+            {% for task in tasks %}
+            <a href="/tasks" class="task-link">
+                <div class="task-status-dot" style="background: {% if task.column_name == 'Done' %}#22c55e{% elif task.column_name == 'In Progress' %}#f59e0b{% else %}#64748b{% endif %};"></div>
+                <span class="{% if task.completed %}text-muted{% endif %}">{{ task.title }}</span>
+                <span class="task-column-badge">{{ task.column_name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </main>
+
+<style>
+.linked-tasks-card {
+    margin-top: 1.5rem;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.card-header h3 {
+    margin: 0;
+}
+
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.task-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.15s;
+}
+
+.task-link:hover {
+    background: var(--bg-surface);
+    transform: translateX(4px);
+}
+
+.task-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.task-column-badge {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+}
+</style>
 {% endblock %}

@@ -196,7 +196,31 @@ def get_task_columns():
 
 @app.get("/", response_class=HTMLResponse)
 def root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) as count FROM customers")
+    customer_count = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(*) as count FROM items")
+    item_count = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(*) as count FROM tasks")
+    task_count = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(*) as count FROM tasks WHERE column_name = 'Done'")
+    done_count = cursor.fetchone()["count"]
+
+    conn.close()
+
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "customer_count": customer_count,
+        "item_count": item_count,
+        "task_count": task_count,
+        "done_count": done_count
+    })
 
 
 @app.get("/status", response_class=HTMLResponse)
@@ -300,7 +324,17 @@ def customer_detail(customer_id: int, request: Request):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tasks WHERE customer_id = ? ORDER BY position ASC, created_at DESC", (customer_id,))
+    
+    # Get tasks where customer is referenced either in tasks.customer_id or task_customers table
+    cursor.execute("""
+        SELECT t.* FROM tasks t
+        WHERE t.customer_id = ?
+        UNION
+        SELECT t.* FROM tasks t
+        INNER JOIN task_customers tc ON t.id = tc.task_id
+        WHERE tc.customer_id = ?
+        ORDER BY position ASC, created_at DESC
+    """, (customer_id, customer_id))
     customer_tasks = cursor.fetchall()
     conn.close()
     
@@ -318,7 +352,29 @@ def edit_customer(customer_id: int, request: Request):
     customer = get_customer(customer_id)
     if not customer:
         return RedirectResponse(url="/customers", status_code=303)
-    return templates.TemplateResponse("customer_edit.html", {"request": request, "customer": customer})
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # Get tasks where customer is referenced either in tasks.customer_id or task_customers table
+    cursor.execute("""
+        SELECT t.id, t.title, t.column_name, t.completed FROM tasks t
+        WHERE t.customer_id = ?
+        UNION
+        SELECT t.id, t.title, t.column_name, t.completed FROM tasks t
+        INNER JOIN task_customers tc ON t.id = tc.task_id
+        WHERE tc.customer_id = ?
+        ORDER BY created_at DESC
+    """, (customer_id, customer_id))
+    tasks = cursor.fetchall()
+    conn.close()
+
+    return templates.TemplateResponse("customer_edit.html", {
+        "request": request,
+        "customer": customer,
+        "tasks": [dict(row) for row in tasks]
+    })
 
 
 @app.post("/customers/edit/{customer_id}")
@@ -613,6 +669,24 @@ def health():
 @app.get("/items", response_class=HTMLResponse)
 def items(request: Request, search: str = "", sort: str = "name_asc"):
     item_list = get_items(search, sort)
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    for item in item_list:
+        cursor.execute("""
+            SELECT t.id, t.title, t.column_name, t.completed
+            FROM tasks t
+            INNER JOIN task_items ti ON t.id = ti.task_id
+            WHERE ti.item_id = ?
+            ORDER BY t.created_at DESC
+            LIMIT 5
+        """, (item["id"],))
+        item["tasks"] = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
     return templates.TemplateResponse("items.html", {
         "request": request,
         "items": item_list,
@@ -644,7 +718,25 @@ def edit_item(item_id: int, request: Request):
     item = get_item(item_id)
     if not item:
         return RedirectResponse(url="/items", status_code=303)
-    return templates.TemplateResponse("item_edit.html", {"request": request, "item": item})
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT t.id, t.title, t.column_name, t.completed
+        FROM tasks t
+        INNER JOIN task_items ti ON t.id = ti.task_id
+        WHERE ti.item_id = ?
+        ORDER BY t.created_at DESC
+    """, (item_id,))
+    tasks = cursor.fetchall()
+    conn.close()
+
+    return templates.TemplateResponse("item_edit.html", {
+        "request": request,
+        "item": item,
+        "tasks": [dict(row) for row in tasks]
+    })
 
 
 @app.post("/items/edit/{item_id}")
