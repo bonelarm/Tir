@@ -69,6 +69,10 @@ def get_items(search: str = "", sort: str = "name_asc"):
         query += " ORDER BY quantity ASC"
     elif sort == "quantity_desc":
         query += " ORDER BY quantity DESC"
+    elif sort == "cost_asc":
+        query += " ORDER BY cost ASC"
+    elif sort == "cost_desc":
+        query += " ORDER BY cost DESC"
     else:
         query += " ORDER BY name ASC"
     
@@ -728,7 +732,7 @@ def items(request: Request, search: str = "", sort: str = "name_asc"):
 
 
 @app.post("/items/add")
-async def add_item(name: str = Form(...), description: str = Form(""), quantity: int = Form(0), image: UploadFile = File(None)):
+async def add_item(name: str = Form(...), description: str = Form(""), quantity: int = Form(0), cost: float = Form(0.0), image: UploadFile = File(None)):
     image_path = ""
     if image and image.filename:
         safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
@@ -739,7 +743,7 @@ async def add_item(name: str = Form(...), description: str = Form(""), quantity:
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO items (name, description, image, quantity) VALUES (?, ?, ?, ?)", (name, description, image_path, quantity))
+    cursor.execute("INSERT INTO items (name, description, image, quantity, cost) VALUES (?, ?, ?, ?, ?)", (name, description, image_path, quantity, cost))
     conn.commit()
     conn.close()
     return RedirectResponse(url="/items", status_code=303)
@@ -772,7 +776,7 @@ def edit_item(item_id: int, request: Request):
 
 
 @app.post("/items/edit/{item_id}")
-async def update_item(item_id: int, name: str = Form(...), description: str = Form(""), quantity: int = Form(0), image: UploadFile = File(None)):
+async def update_item(item_id: int, name: str = Form(...), description: str = Form(""), quantity: int = Form(0), cost: float = Form(0.0), image: UploadFile = File(None)):
     item = get_item(item_id)
     if not item:
         return RedirectResponse(url="/items", status_code=303)
@@ -791,7 +795,7 @@ async def update_item(item_id: int, name: str = Form(...), description: str = Fo
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE items SET name = ?, description = ?, image = ?, quantity = ? WHERE id = ?", (name, description, image_path, quantity, item_id))
+    cursor.execute("UPDATE items SET name = ?, description = ?, image = ?, quantity = ?, cost = ? WHERE id = ?", (name, description, image_path, quantity, cost, item_id))
     conn.commit()
     conn.close()
     return RedirectResponse(url="/items", status_code=303)

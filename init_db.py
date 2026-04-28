@@ -47,6 +47,8 @@ cursor.execute('''
         description TEXT,
         image TEXT,
         quantity INTEGER DEFAULT 0,
+        price REAL DEFAULT 0,
+        cost REAL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 ''')
