@@ -1,6 +1,7 @@
 import sqlite3
 import csv
 import io
+import json
 from pathlib import Path
 from fastapi import FastAPI, Request, Form, UploadFile, File, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
@@ -23,6 +24,12 @@ app.mount("/css", StaticFiles(directory="css"), name="css")
 app.mount("/js", StaticFiles(directory="js"), name="js")
 
 templates = Jinja2Templates(directory="templates")
+
+# Add json filter to Jinja2
+def tojson_filter(obj):
+    return json.dumps(obj)
+
+templates.env.filters['tojson'] = tojson_filter
 
 
 def get_db_status():
@@ -212,14 +219,45 @@ def root(request: Request):
     cursor.execute("SELECT COUNT(*) as count FROM tasks WHERE column_name = 'Done'")
     done_count = cursor.fetchone()["count"]
 
+    # Tasks by column for chart
+    cursor.execute("SELECT column_name, COUNT(*) as count FROM tasks GROUP BY column_name ORDER BY COUNT(*) DESC")
+    tasks_by_column = [{"name": row["column_name"], "count": row["count"]} for row in cursor.fetchall()]
+
+    # Recent tasks for activity feed
+    cursor.execute("""
+        SELECT t.title, t.column_name, t.created_at,
+               GROUP_CONCAT(DISTINCT c.name) as customer_names
+        FROM tasks t
+        LEFT JOIN task_customers tc ON t.id = tc.task_id
+        LEFT JOIN customers c ON tc.customer_id = c.id
+        GROUP BY t.id
+        ORDER BY t.created_at DESC LIMIT 5
+    """)
+    recent_tasks = [dict(row) for row in cursor.fetchall()]
+
+    # Items with low quantity (for inventory bar)
+    cursor.execute("SELECT name, quantity FROM items ORDER BY quantity ASC LIMIT 5")
+    low_stock_items = [dict(row) for row in cursor.fetchall()]
+
+    # Total inventory value
+    cursor.execute("SELECT COALESCE(SUM(quantity * price), 0) as total_value FROM items")
+    total_inventory_value = cursor.fetchone()["total_value"]
+
     conn.close()
+
+    completion_rate = round((done_count / task_count * 100) if task_count > 0 else 0, 1)
 
     return templates.TemplateResponse("index.html", {
         "request": request,
         "customer_count": customer_count,
         "item_count": item_count,
         "task_count": task_count,
-        "done_count": done_count
+        "done_count": done_count,
+        "tasks_by_column": tasks_by_column,
+        "recent_tasks": recent_tasks,
+        "low_stock_items": low_stock_items,
+        "total_inventory_value": total_inventory_value,
+        "completion_rate": completion_rate
     })
 
 
@@ -325,16 +363,13 @@ def customer_detail(customer_id: int, request: Request):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # Get tasks where customer is referenced either in tasks.customer_id or task_customers table
+    # Get tasks linked via task_customers junction table
     cursor.execute("""
-        SELECT t.* FROM tasks t
-        WHERE t.customer_id = ?
-        UNION
         SELECT t.* FROM tasks t
         INNER JOIN task_customers tc ON t.id = tc.task_id
         WHERE tc.customer_id = ?
-        ORDER BY position ASC, created_at DESC
-    """, (customer_id, customer_id))
+        ORDER BY t.position ASC, t.created_at DESC
+    """, (customer_id,))
     customer_tasks = cursor.fetchall()
     conn.close()
     
@@ -357,16 +392,13 @@ def edit_customer(customer_id: int, request: Request):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # Get tasks where customer is referenced either in tasks.customer_id or task_customers table
+    # Get tasks linked via task_customers junction table
     cursor.execute("""
-        SELECT t.id, t.title, t.column_name, t.completed FROM tasks t
-        WHERE t.customer_id = ?
-        UNION
         SELECT t.id, t.title, t.column_name, t.completed FROM tasks t
         INNER JOIN task_customers tc ON t.id = tc.task_id
         WHERE tc.customer_id = ?
-        ORDER BY created_at DESC
-    """, (customer_id, customer_id))
+        ORDER BY t.created_at DESC
+    """, (customer_id,))
     tasks = cursor.fetchall()
     conn.close()
 
