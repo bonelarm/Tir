@@ -4,201 +4,455 @@
 
 {% block content %}
 <main class="container" style="padding: 2rem 0;">
-    <div class="flex justify-between items-center" style="margin-bottom: 2rem;">
-        <h1>Customers</h1>
-        <div class="flex" style="gap: 0.5rem;">
-            <div class="view-toggle">
-                <button type="button" class="icon-btn active" id="tileViewBtn" onclick="setView('tile')" title="Tile View">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                </button>
-                <button type="button" class="icon-btn" id="listViewBtn" onclick="setView('list')" title="List View">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                </button>
-            </div>
-            <button class="btn btn-primary" onclick="document.getElementById('addForm').classList.toggle('hidden')">Add Customer</button>
+    <div class="page-header">
+        <div>
+            <h1>Customers</h1>
+            <p class="text-secondary">Manage your customer relationships</p>
         </div>
-    </div>
-
-    <div class="flex" style="gap: 1rem; margin-bottom: 1.5rem;">
-        <input type="text" id="searchInput" placeholder="Search customers..." value="{{ search }}" style="flex: 1; max-width: 300px;" onkeyup="handleSearch(event)">
-        <select id="sortSelect" style="width: 150px;" onchange="handleSort()">
-            <option value="name_asc" {% if sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
-            <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
-            <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>Oldest</option>
-            <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Newest</option>
-        </select>
-        <a href="/customers/export" class="btn btn-ghost" title="Export CSV">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export
-        </a>
-        <button class="btn btn-ghost" onclick="document.getElementById('importForm').classList.toggle('hidden')" title="Import CSV">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Import
+        <button class="btn btn-primary" onclick="document.getElementById('addForm').classList.toggle('hidden')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Customer
         </button>
     </div>
 
-    <div id="importForm" class="card hidden" style="margin-bottom: 1rem;">
-        <h3 style="margin-bottom: 1rem;">Import Customers from CSV</h3>
-        <form action="/customers/import" method="post" enctype="multipart/form-data">
-            <div class="flex" style="gap: 1rem; align-items: center;">
-                <input type="file" name="file" accept=".csv" required>
+    <div class="toolbar">
+        <div class="search-box">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" placeholder="Search customers..." value="{{ search }}" onkeyup="handleSearch(event)">
+        </div>
+        <select id="sortSelect" onchange="handleSort()">
+            <option value="name_asc" {% if sort == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+            <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+            <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>Oldest First</option>
+            <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Newest First</option>
+        </select>
+        <div class="toolbar-actions">
+            <a href="/customers/export" class="btn btn-ghost" title="Export CSV">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export
+            </a>
+        </div>
+    </div>
+
+    <div id="importForm" class="card-panel hidden">
+        <div class="panel-header">
+            <h3>Import Customers</h3>
+            <button class="icon-btn-sm" onclick="document.getElementById('importForm').classList.add('hidden')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <form action="/customers/import" method="post" enctype="multipart/form-data" class="panel-content">
+            <input type="file" name="file" accept=".csv" required>
+            <p class="text-sm text-muted">Required: Name | Optional: Email, Phone, Description, Address, Company, Website</p>
+            <div class="flex" style="gap: 0.5rem;">
                 <button type="submit" class="btn btn-primary">Import</button>
                 <button type="button" class="btn btn-ghost" onclick="document.getElementById('importForm').classList.add('hidden')">Cancel</button>
             </div>
-            <p class="text-sm text-muted" style="margin-top: 0.5rem;">Required columns: Name. Optional: Email, Phone, Description, Address, Company, Website</p>
         </form>
     </div>
 
-    <div id="addForm" class="card hidden" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1rem;">Add New Customer</h3>
-        <form action="/customers/add" method="post" enctype="multipart/form-data">
-            <div class="grid grid-2" style="gap: 1rem;">
+    <div id="addForm" class="card-panel hidden">
+        <div class="panel-header">
+            <h3>Add New Customer</h3>
+            <button class="icon-btn-sm" onclick="document.getElementById('addForm').classList.add('hidden')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <form action="/customers/add" method="post" enctype="multipart/form-data" class="panel-content">
+            <div class="form-grid">
                 <div class="form-group">
-                    <label for="add_name">Name *</label>
-                    <input type="text" id="add_name" name="name" required>
+                    <label>Name *</label>
+                    <input type="text" name="name" required>
                 </div>
                 <div class="form-group">
-                    <label for="add_email">Email</label>
-                    <input type="email" id="add_email" name="email">
+                    <label>Email</label>
+                    <input type="email" name="email">
                 </div>
                 <div class="form-group">
-                    <label for="add_company">Company</label>
-                    <input type="text" id="add_company" name="company">
+                    <label>Company</label>
+                    <input type="text" name="company">
                 </div>
                 <div class="form-group">
-                    <label for="add_website">Website</label>
-                    <input type="url" id="add_website" name="website" placeholder="https://">
+                    <label>Website</label>
+                    <input type="url" name="website" placeholder="https://">
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label for="add_address">Address</label>
-                    <input type="text" id="add_address" name="address">
+                    <label>Address</label>
+                    <input type="text" name="address">
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label for="add_image">Image</label>
-                    <input type="file" id="add_image" name="image" accept="image/*">
+                    <label>Description</label>
+                    <textarea name="description" rows="2"></textarea>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label for="add_description">Description</label>
-                    <textarea id="add_description" name="description" rows="2"></textarea>
+                    <label>Image</label>
+                    <input type="file" name="image" accept="image/*">
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary">Save</button>
-            <button type="button" class="btn btn-ghost" onclick="document.getElementById('addForm').classList.add('hidden')">Cancel</button>
+            <div class="flex" style="gap: 0.5rem; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary">Save Customer</button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('addForm').classList.add('hidden')">Cancel</button>
+            </div>
         </form>
     </div>
 
-    <div id="tileView" class="grid grid-3">
+    <div class="customers-grid">
         {% for customer in customers %}
-        <div class="card">
-            {% if customer.image %}
-            <img src="/static/{{ customer.image }}" alt="{{ customer.name }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--radius-md); margin-bottom: 1rem;">
-            {% else %}
-            <div style="width: 100%; height: 150px; background: var(--bg-elevated); border-radius: var(--radius-md); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">No Image</div>
-            {% endif %}
-            <h3>{{ customer.name }}</h3>
-            {% if customer.company %}
-            <p class="text-sm text-secondary" style="margin-bottom: 0.25rem;">{{ customer.company }}</p>
-            {% endif %}
-            {% if customer.email %}
-            <a href="mailto:{{ customer.email }}" class="text-sm" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                {{ customer.email }}
-            </a>
-            {% endif %}
-            {% if customer.description %}
-            <p class="text-sm text-secondary" style="margin-bottom: 1rem;">{{ customer.description[:80] }}{% if customer.description|length > 80 %}...{% endif %}</p>
-            {% endif %}
-            <div class="flex" style="gap: 0.5rem;">
-                <a href="/customers/{{ customer.id }}" class="icon-btn" title="View">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div class="customer-card">
+            <div class="customer-avatar">
+                {% if customer.image %}
+                <img src="/static/{{ customer.image }}" alt="{{ customer.name }}">
+                {% else %}
+                <span>{{ customer.name[:2].upper() }}</span>
+                {% endif %}
+            </div>
+            <div class="customer-info">
+                <h3>{{ customer.name }}</h3>
+                {% if customer.company %}
+                <p class="customer-company">{{ customer.company }}</p>
+                {% endif %}
+                {% if customer.email %}
+                <a href="mailto:{{ customer.email }}" class="customer-email">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    {{ customer.email }}
                 </a>
-                <a href="/customers/edit/{{ customer.id }}" class="icon-btn" title="Edit">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                {% endif %}
+            </div>
+            <div class="customer-actions">
+                <a href="/customers/{{ customer.id }}" class="action-btn" title="View">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                 </a>
-                <form action="/customers/delete/{{ customer.id }}" method="post" onsubmit="return confirm('Delete {{ customer.name }}?')" style="display: inline;">
-                    <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <a href="/customers/edit/{{ customer.id }}" class="action-btn" title="Edit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </a>
+                <form action="/customers/delete/{{ customer.id }}" method="post" onsubmit="return confirm('Delete {{ customer.name }}?')" style="display:inline;">
+                    <button type="submit" class="action-btn action-delete" title="Delete" style="display:inline-flex !important;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                 </form>
             </div>
         </div>
         {% else %}
-        <p class="text-muted">No customers found.</p>
+        <div class="empty-state">
+            <div class="empty-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <h3>No customers yet</h3>
+            <p class="text-muted">Add your first customer to get started</p>
+            <button class="btn btn-primary" onclick="document.getElementById('addForm').classList.toggle('hidden')">Add Customer</button>
+        </div>
         {% endfor %}
-    </div>
-
-    <div id="listView" class="hidden">
-        <table style="width: 100%;">
-            <thead>
-                <tr>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Image</th>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Name</th>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Company</th>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Email</th>
-                    <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border);">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for customer in customers %}
-                <tr>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);">
-                        {% if customer.image %}
-                        <img src="/static/{{ customer.image }}" alt="{{ customer.name }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: var(--radius-sm);">
-                        {% else %}
-                        <div style="width: 50px; height: 50px; background: var(--bg-elevated); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.625rem;">No</div>
-                        {% endif %}
-                    </td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);">{{ customer.name }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);" class="text-secondary">{{ customer.company or '-' }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);" class="text-secondary">{{ customer.email or '-' }}</td>
-                    <td style="padding: 0.75rem; border-bottom: 1px solid var(--border-light);">
-                        <div class="flex" style="gap: 0.25rem;">
-                            <a href="/customers/{{ customer.id }}" class="icon-btn" title="View">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </a>
-                            <a href="/customers/edit/{{ customer.id }}" class="icon-btn" title="Edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            </a>
-                            <form action="/customers/delete/{{ customer.id }}" method="post" onsubmit="return confirm('Delete {{ customer.name }}?')">
-                                <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" style="padding: 1rem; text-align: center; color: var(--text-muted);">No customers found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
 </main>
 
-<script>
-function setView(view) {
-    const tileView = document.getElementById('tileView');
-    const listView = document.getElementById('listView');
-    const tileBtn = document.getElementById('tileViewBtn');
-    const listBtn = document.getElementById('listViewBtn');
-    
-    if (view === 'tile') {
-        tileView.classList.remove('hidden');
-        listView.classList.add('hidden');
-        tileBtn.classList.add('active');
-        listBtn.classList.remove('active');
-        localStorage.setItem('customerView', 'tile');
-    } else {
-        tileView.classList.add('hidden');
-        listView.classList.remove('hidden');
-        tileBtn.classList.remove('active');
-        listBtn.classList.add('active');
-        localStorage.setItem('customerView', 'list');
-    }
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
 }
 
+.page-header h1 {
+    margin-bottom: 0.25rem;
+}
+
+.page-header p {
+    margin: 0;
+}
+
+.toolbar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0 0.75rem;
+    flex: 1;
+    max-width: 350px;
+}
+
+.search-box svg {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.search-box input {
+    background: transparent;
+    border: none;
+    padding: 0.625rem 0;
+    flex: 1;
+    color: var(--text-primary);
+}
+
+.search-box input::placeholder {
+    color: var(--text-muted);
+}
+
+.search-box input:focus {
+    outline: none;
+}
+
+.toolbar select {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.75rem;
+    color: var(--text-primary);
+    min-width: 140px;
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.card-panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.panel-header h3 {
+    margin: 0;
+}
+
+.panel-content {
+    padding: 1.5rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.icon-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.icon-btn-sm:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.customers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.customer-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.customer-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+    transform: translateY(-2px);
+}
+
+.customer-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--accent);
+    margin-bottom: 1rem;
+    flex-shrink: 0;
+}
+
+.customer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.customer-avatar span {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+}
+
+.customer-info {
+    margin-bottom: 1rem;
+}
+
+.customer-info h3 {
+    margin-bottom: 0.25rem;
+    font-size: 1.125rem;
+}
+
+.customer-company {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.375rem;
+}
+
+.customer-email {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--accent-light);
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.customer-email:hover {
+    text-decoration: underline;
+}
+
+.customer-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-light);
+    width: 100%;
+    justify-content: center;
+}
+
+.action-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary) !important;
+    text-decoration: none;
+    transition: all 0.15s;
+    cursor: pointer;
+    padding: 0;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative;
+    overflow: visible;
+}
+
+.action-btn svg {
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+    fill: none;
+}
+
+.action-btn:hover {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: white !important;
+}
+
+.action-btn.action-delete {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-light) !important;
+    color: var(--text-secondary) !important;
+}
+
+.action-btn.action-delete:hover {
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--bg-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+}
+
+.empty-state h3 {
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .toolbar {
+        flex-direction: column;
+    }
+    
+    .search-box {
+        max-width: 100%;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-group[style*="grid-column"] {
+        grid-column: span 1;
+    }
+}
+</style>
+
+<script>
 function handleSearch(event) {
     if (event.key === 'Enter') {
         const search = event.target.value;
@@ -212,30 +466,5 @@ function handleSort() {
     const sort = document.getElementById('sortSelect').value;
     window.location.href = `/customers?search=${encodeURIComponent(search)}&sort=${sort}`;
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    const savedView = localStorage.getItem('customerView') || 'tile';
-    setView(savedView);
-});
 </script>
-
-<style>
-.view-toggle {
-    display: flex;
-    gap: 0.25rem;
-    padding: 0.25rem;
-    background: var(--bg-elevated);
-    border-radius: var(--radius-md);
-}
-
-.view-toggle .icon-btn {
-    background: transparent;
-    border: none;
-}
-
-.view-toggle .icon-btn.active {
-    background: var(--accent);
-    color: white;
-}
-</style>
 {% endblock %}

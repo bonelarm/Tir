@@ -4,151 +4,98 @@
 
 {% block content %}
 <main class="container" style="padding: 2rem 0;">
-    <a href="/customers" class="btn btn-ghost" style="margin-bottom: 1rem;">
+    <a href="/customers" class="btn btn-ghost" style="margin-bottom: 1rem; display: inline-flex; align-items: center; gap: 0.5rem;">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        Back
+        Back to Customers
     </a>
 
-    <div class="grid grid-2" style="gap: 2rem;">
-        <div class="stack">
-            <div class="card">
+    <div class="customer-profile">
+        <div class="profile-header">
+            <div class="profile-avatar">
                 {% if customer.image %}
-                <img src="/static/{{ customer.image }}" alt="{{ customer.name }}" style="width: 100%; height: 250px; object-fit: cover; border-radius: var(--radius-lg); margin-bottom: 1rem;">
+                <img src="/static/{{ customer.image }}" alt="{{ customer.name }}">
                 {% else %}
-                <div style="width: 100%; height: 250px; background: var(--bg-elevated); border-radius: var(--radius-lg); margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">No Image</div>
+                <div class="avatar-placeholder">
+                    {{ customer.name[:1].upper() }}
+                </div>
                 {% endif %}
-                <h2 style="margin-bottom: 0.5rem;">{{ customer.name }}</h2>
-                
+            </div>
+            <div class="profile-info">
+                <h1 style="margin-bottom: 0.25rem;">{{ customer.name }}</h1>
                 {% if customer.company %}
-                <p class="text-secondary" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.25rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9h.01"/><path d="M9 12h.01"/><path d="M9 15h.01"/><path d="M9 18h.01"/></svg>
-                    {{ customer.company }}
-                </p>
+                <p class="text-secondary" style="font-size: 1.125rem; margin-bottom: 0.5rem;">{{ customer.company }}</p>
                 {% endif %}
-                
-                {% if customer.email and customer.email.strip() %}
-                <a href="mailto:{{ customer.email }}" class="text-secondary" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                    {{ customer.email }}
-                </a>
-                {% endif %}
-                
-                {% if customer.website and customer.website.strip() %}
-                <a href="{{ customer.website }}" target="_blank" class="text-secondary" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                    {{ customer.website }}
-                </a>
-                {% endif %}
-                
-                {% if customer.address and customer.address.strip() %}
-                <p class="text-secondary" style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    {{ customer.address }}
-                </p>
-                {% endif %}
-                
+                <div class="profile-meta">
+                    {% if customer.email %}
+                    <a href="mailto:{{ customer.email }}" class="meta-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        {{ customer.email }}
+                    </a>
+                    {% endif %}
+                    {% if customer.website %}
+                    <a href="{{ customer.website }}" target="_blank" class="meta-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                        {{ customer.website }}
+                    </a>
+                    {% endif %}
+                    {% if customer.address %}
+                    <span class="meta-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        {{ customer.address }}
+                    </span>
+                    {% endif %}
+                </div>
                 {% if customer.description %}
                 <p class="text-secondary" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">{{ customer.description }}</p>
                 {% endif %}
-                
-                <div class="flex" style="margin-top: 1rem; gap: 0.5rem;">
-                    <a href="/customers/edit/{{ customer.id }}" class="icon-btn" title="Edit">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <div class="profile-actions" style="margin-top: 1.5rem;">
+                    <a href="/customers/edit/{{ customer.id }}" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Edit Customer
                     </a>
                 </div>
             </div>
-            
-            <div class="card">
-                <div class="flex justify-between items-center" style="margin-bottom: 1rem;">
-                    <h3>Notes</h3>
-                    <button class="btn btn-sm btn-primary" onclick="document.getElementById('addNote').classList.toggle('hidden')">Add</button>
-                </div>
-                
-                <div id="addNote" class="hidden" style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
-                    <form action="/customers/{{ customer.id }}/note/add" method="post" class="stack">
-                        <textarea name="note" placeholder="Write a note..." rows="3" required></textarea>
-                        <div class="flex" style="gap: 0.5rem;">
-                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                            <button type="button" class="btn btn-sm btn-ghost" onclick="document.getElementById('addNote').classList.add('hidden')">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-                
-                <div class="stack">
-                    {% for note in notes %}
-                    <div style="padding: 0.75rem; background: var(--bg-elevated); border-radius: var(--radius-md); position: relative;">
-                        <p style="margin-bottom: 0.5rem;">{{ note.note }}</p>
-                        <p class="text-xs text-muted" style="margin-bottom: 0;">{{ note.created_at }}</p>
-                        <form action="/customers/{{ customer.id }}/note/delete/{{ note.id }}" method="post" style="position: absolute; top: 0.5rem; right: 0.5rem;">
-                            <button type="submit" class="icon-btn icon-btn-delete" style="width: 28px; height: 28px;" title="Delete">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            </button>
-                        </form>
-                    </div>
-                    {% else %}
-                    <p class="text-muted text-sm">No notes yet.</p>
-                    {% endfor %}
-                </div>
-            </div>
         </div>
+    </div>
 
-        <div>
-            <div class="card">
-                <div class="flex justify-between items-center" style="margin-bottom: 1rem;">
-                    <h3>Contacts</h3>
-                    <button class="btn btn-sm btn-primary" onclick="document.getElementById('addContact').classList.toggle('hidden')">Add</button>
-                </div>
-
-                <div id="addContact" class="hidden" style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
-                    <form action="/customers/{{ customer.id }}/contact/add" method="post" class="stack">
-                        <div class="form-group" style="margin-bottom: 0.5rem;">
-                            <input type="text" name="contact_name" placeholder="Name" required>
+    <div class="grid grid-2" style="gap: 1.5rem; margin-top: 2rem;">
+        <div class="card">
+            <div class="card-header">
+                <h3>Contacts</h3>
+                <button class="btn btn-sm btn-primary" onclick="document.getElementById('addContact').classList.toggle('hidden')">Add Contact</button>
+            </div>
+            
+            <div id="addContact" class="hidden" style="margin: 1rem 0; padding: 1rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
+                <form action="/customers/{{ customer.id }}/contact/add" method="post" class="stack" style="gap: 0.75rem;">
+                    <input type="text" name="contact_name" placeholder="Contact name" required style="width: 100%;">
+                    <input type="text" name="phone" placeholder="Phone number" required style="width: 100%;">
+                    <input type="email" name="email" placeholder="Email (optional)" style="width: 100%;">
+                    <div class="flex" style="gap: 0.5rem;">
+                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                        <button type="button" class="btn btn-sm btn-ghost" onclick="document.getElementById('addContact').classList.add('hidden')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="contacts-list">
+                {% for contact in contacts %}
+                <div class="contact-card" id="contact-{{ contact.id }}">
+                    <div class="contact-avatar">
+                        {{ contact.name[:1].upper() }}
+                    </div>
+                    <div class="contact-info" style="flex: 1;">
+                        <div class="contact-view">
+                            <p style="font-weight: 500; margin-bottom: 0.125rem;">{{ contact.name }}</p>
+                            <p class="text-sm text-secondary" style="margin-bottom: 0.25rem;">{{ contact.phone }}</p>
+                            {% if contact.email %}
+                            <a href="mailto:{{ contact.email }}" class="text-sm" style="color: var(--accent-light);">{{ contact.email }}</a>
+                            {% endif %}
                         </div>
-                        <div class="form-group" style="margin-bottom: 0.5rem;">
-                            <input type="text" name="phone" placeholder="Phone number" required>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0.5rem;">
-                            <input type="email" name="email" placeholder="Email (optional)">
-                        </div>
-                        <div class="flex" style="gap: 0.5rem;">
-                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
-                            <button type="button" class="btn btn-sm btn-ghost" onclick="document.getElementById('addContact').classList.add('hidden')">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="stack">
-                    {% for contact in contacts %}
-                    <div id="contact-{{ contact.id }}" class="contact-item" style="padding: 0.75rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
-                        <div class="flex justify-between items-center">
-                            <div class="contact-view">
-                                <p style="margin-bottom: 0; color: var(--text-primary); font-weight: 500;">{{ contact.name }}</p>
-                                <p style="margin-bottom: 0;" class="text-sm text-secondary">{{ contact.phone }}</p>
-                                {% if contact.email %}
-                                <a href="mailto:{{ contact.email }}" class="text-sm" style="display: flex; align-items: center; gap: 0.25rem; margin-top: 0.25rem;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                                    {{ contact.email }}
-                                </a>
-                                {% endif %}
-                            </div>
-                            <div class="contact-actions flex" style="gap: 0.25rem;">
-                                <button type="button" class="icon-btn" onclick="toggleEdit({{ contact.id }})" title="Edit">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                </button>
-                                <form action="/customers/{{ customer.id }}/contact/delete/{{ contact.id }}" method="post">
-                                    <button type="submit" class="icon-btn icon-btn-delete" title="Delete">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        <div class="contact-edit hidden" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
-                            <form action="/customers/{{ customer.id }}/contact/edit/{{ contact.id }}" method="post" class="stack">
-                                <div class="flex" style="gap: 0.5rem;">
-                                    <input type="text" name="contact_name" value="{{ contact.name }}" required style="flex: 1;">
-                                    <input type="text" name="phone" value="{{ contact.phone }}" required style="flex: 1;">
-                                </div>
-                                <input type="email" name="email" value="{{ contact.email or '' }}" placeholder="Email (optional)">
+                        <div class="contact-edit hidden">
+                            <form action="/customers/{{ customer.id }}/contact/edit/{{ contact.id }}" method="post" class="stack" style="gap: 0.5rem;">
+                                <input type="text" name="contact_name" value="{{ contact.name }}" required style="width: 100%;">
+                                <input type="text" name="phone" value="{{ contact.phone }}" required style="width: 100%;">
+                                <input type="email" name="email" value="{{ contact.email or '' }}" placeholder="Email (optional)" style="width: 100%;">
                                 <div class="flex" style="gap: 0.5rem;">
                                     <button type="submit" class="btn btn-sm btn-primary">Save</button>
                                     <button type="button" class="btn btn-sm btn-ghost" onclick="toggleEdit({{ contact.id }})">Cancel</button>
@@ -156,45 +103,289 @@
                             </form>
                         </div>
                     </div>
-                    {% else %}
-                    <p class="text-muted text-sm">No contacts yet.</p>
-                    {% endfor %}
-                </div>
-            </div>
-
-            {% if tasks %}
-            <div class="card">
-                <h3 style="margin-bottom: 1rem;">Tasks</h3>
-                <div class="stack" style="gap: 0.5rem;">
-                    {% for task in tasks %}
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
-                        <a href="/tasks" style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
-                            <span style="{% if task.completed %}text-decoration: line-through; color: var(--text-muted);{% endif %}">{{ task.title }}</span>
-                            <span class="text-xs text-muted">({{ task.column_name }})</span>
-                        </a>
+                    <div class="contact-actions">
+                        <button type="button" class="icon-btn-sm" onclick="toggleEdit({{ contact.id }})" title="Edit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <form action="/customers/{{ customer.id }}/contact/delete/{{ contact.id }}" method="post">
+                            <button type="submit" class="icon-btn-sm icon-btn-delete" title="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </form>
                     </div>
-                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <p>No contacts yet</p>
+                    <button class="btn btn-sm btn-ghost" onclick="document.getElementById('addContact').classList.toggle('hidden')">Add First Contact</button>
+                </div>
+                {% endfor %}
             </div>
-            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Notes</h3>
+                <button class="btn btn-sm btn-primary" onclick="document.getElementById('addNote').classList.toggle('hidden')">Add Note</button>
+            </div>
+            
+            <div id="addNote" class="hidden" style="margin: 1rem 0; padding: 1rem; background: var(--bg-elevated); border-radius: var(--radius-md);">
+                <form action="/customers/{{ customer.id }}/note/add" method="post" class="stack" style="gap: 0.75rem;">
+                    <textarea name="note" placeholder="Write a note..." rows="3" required style="width: 100%;"></textarea>
+                    <div class="flex" style="gap: 0.5rem;">
+                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                        <button type="button" class="btn btn-sm btn-ghost" onclick="document.getElementById('addNote').classList.add('hidden')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="notes-list">
+                {% for note in notes %}
+                <div class="note-card">
+                    <p style="margin-bottom: 0.5rem;">{{ note.note }}</p>
+                    <div class="note-footer">
+                        <span class="text-xs text-muted">{{ note.created_at }}</span>
+                        <form action="/customers/{{ customer.id }}/note/delete/{{ note.id }}" method="post">
+                            <button type="submit" class="icon-btn-sm icon-btn-delete" title="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <p>No notes yet</p>
+                    <button class="btn btn-sm btn-ghost" onclick="document.getElementById('addNote').classList.toggle('hidden')">Add First Note</button>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
+
+    {% if tasks %}
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <h3>Tasks</h3>
+            <a href="/tasks" class="btn btn-sm btn-ghost">View All Tasks</a>
+        </div>
+        <div class="tasks-grid">
+            {% for task in tasks %}
+            <a href="/tasks" class="task-item" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: var(--bg-elevated); border-radius: var(--radius-md); text-decoration: none;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="task-status" style="width: 8px; height: 8px; border-radius: 50%; background: {% if task.column_name == 'Done' %}#22c55e{% elif task.column_name == 'In Progress' %}#f59e0b{% else %}#64748b{% endif %};"></div>
+                    <span style="{% if task.completed %}text-decoration: line-through; color: var(--text-muted);{% endif %}">{{ task.title }}</span>
+                </div>
+                <span class="text-xs text-muted" style="background: var(--bg-surface); padding: 0.25rem 0.5rem; border-radius: var(--radius-sm);">{{ task.column_name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </main>
+
+<style>
+.customer-profile {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+}
+
+.profile-header {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: var(--bg-elevated);
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--accent);
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-decoration: none;
+}
+
+.meta-item:hover {
+    color: var(--text-primary);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.card-header h3 {
+    margin: 0;
+}
+
+.contacts-list, .notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.contact-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+}
+
+.contact-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.contact-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.icon-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.icon-btn-sm:hover {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+}
+
+.icon-btn-delete:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.note-card {
+    padding: 0.75rem 1rem;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+}
+
+.note-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.empty-state svg {
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 0.75rem;
+}
+
+.task-status {
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .profile-meta {
+        justify-content: center;
+    }
+    .profile-actions {
+        justify-content: center;
+    }
+}
+</style>
 
 <script>
 function toggleEdit(contactId) {
     const item = document.getElementById('contact-' + contactId);
     const view = item.querySelector('.contact-view');
     const edit = item.querySelector('.contact-edit');
-    const actions = item.querySelector('.contact-actions');
     
     if (edit.classList.contains('hidden')) {
         view.classList.add('hidden');
-        actions.classList.add('hidden');
         edit.classList.remove('hidden');
     } else {
         view.classList.remove('hidden');
-        actions.classList.remove('hidden');
         edit.classList.add('hidden');
     }
 }
