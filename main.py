@@ -2,12 +2,15 @@ import sqlite3
 import csv
 import io
 import json
+import time
 from pathlib import Path
 from fastapi import FastAPI, Request, Form, UploadFile, File, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import shutil
+
+START_TIME = time.time()
 
 app = FastAPI()
 
@@ -34,18 +37,32 @@ templates.env.filters['tojson'] = tojson_filter
 
 def get_db_status():
     try:
+        start = time.time()
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute("SELECT status, timestamp FROM status_log ORDER BY id DESC LIMIT 1")
         result = cursor.fetchone()
         cursor.execute("SELECT COUNT(*) FROM customers")
         customer_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM tasks")
+        task_count = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM items")
+        item_count = cursor.fetchone()[0]
         conn.close()
+        response_time = round((time.time() - start) * 1000, 2)
+        db_size = round(DB_PATH.stat().st_size / 1024, 2) if DB_PATH.exists() else 0
+        uptime_seconds = int(time.time() - START_TIME)
+        uptime_str = f"{uptime_seconds // 3600}h {(uptime_seconds % 3600) // 60}m {uptime_seconds % 60}s"
         if result:
-            return {"status": result[0], "timestamp": result[1], "customer_count": customer_count}
-        return {"status": "unknown", "customer_count": customer_count}
-    except:
-        return {"status": "error", "customer_count": 0}
+            return {"status": result[0], "timestamp": result[1], "customer_count": customer_count,
+                    "task_count": task_count, "item_count": item_count, "db_size_kb": db_size,
+                    "uptime": uptime_str, "response_time_ms": response_time}
+        return {"status": "unknown", "customer_count": customer_count, "task_count": task_count,
+                "item_count": item_count, "db_size_kb": db_size, "uptime": uptime_str,
+                "response_time_ms": response_time}
+    except Exception as e:
+        return {"status": "error", "customer_count": 0, "task_count": 0, "item_count": 0,
+                "db_size_kb": 0, "uptime": "0s", "response_time_ms": 0}
 
 
 def get_items(search: str = "", sort: str = "name_asc"):
