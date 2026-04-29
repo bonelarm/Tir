@@ -48,6 +48,26 @@
                     <input type="number" id="quantity" name="quantity" value="0" min="0">
                 </div>
                 <div class="form-group">
+                    <label for="year_made">Year Made</label>
+                    <input type="number" id="year_made" name="year_made" min="0" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="made_in">Made In</label>
+                    <input type="text" id="made_in" name="made_in">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="class_id">Class</label>
+                    <select id="class_id" name="class_id">
+                        {% for c in classes %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="new_class">New Class</label>
+                    <input type="text" id="new_class" name="new_class" placeholder="Add new class">
+                </div>
+                <div class="form-group">
                     <label for="cost">Cost (optional)</label>
                     <input type="number" id="cost" name="cost" value="0" min="0" step="0.01" placeholder="0.00">
                 </div>
@@ -94,6 +114,17 @@
                 {% if item.description %}
                 <p class="item-card-desc">{{ item.description[:80] }}{% if item.description|length > 80 %}...{% endif %}</p>
                 {% endif %}
+                {% if item.year_made is defined and item.year_made is not none %}
+                <p class="item-card-meta" style="font-size:12px; color:var(--text-muted);">Made: {{ item.year_made }}{% if item.made_in %} • {{ item.made_in }}{% endif %}</p>
+                {% elif item.made_in is defined and item.made_in %}
+                <p class="item-card-meta" style="font-size:12px; color:var(--text-muted);">Made in: {{ item.made_in }}</p>
+                {% endif %}
+                {% if item.class_name %}
+                <p class="item-card-meta" style="font-size:12px; color:var(--text-muted);">Class: {{ item.class_name }}</p>
+                {% endif %}
+                {% if item.status is not none %}
+                <p class="item-card-meta" style="font-size:12px; color:var(--text-muted);">Status: {% if item.status == 1 %}Broken{% else %}OK{% endif %}</p>
+                {% endif %}
                 <div class="item-card-footer">
                     <span class="item-card-qty">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
@@ -105,12 +136,12 @@
                         ${{ "%.2f"|format(item.cost) }}
                     </span>
                     {% endif %}
-                    {% if item.tasks %}
+                {% if item.tasks %}
                     <span class="task-count" title="{{ item.tasks|length }} task{{ 's' if item.tasks|length != 1 else '' }}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
                         {{ item.tasks|length }}
                     </span>
-                    {% endif %}
+                {% endif %}
                 </div>
                 {% if item.tasks %}
                 <div class="item-tasks-preview">

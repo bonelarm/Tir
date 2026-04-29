@@ -36,6 +36,26 @@
                     <label for="quantity">Quantity</label>
                     <input type="number" id="quantity" name="quantity" value="{{ item.quantity }}" min="0">
                 </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="class_id">Class</label>
+                    <select id="class_id" name="class_id">
+                        {% for c in classes %}
+                        <option value="{{ c.id }}" {% if item.class_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label for="new_class">New Class</label>
+                    <input type="text" id="new_class" name="new_class" placeholder="Add new class">
+                </div>
+                <div class="form-group">
+                    <label for="year_made">Year Made</label>
+                    <input type="number" id="year_made" name="year_made" value="{{ item.year_made or '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="made_in">Made In</label>
+                    <input type="text" id="made_in" name="made_in" value="{{ item.made_in or '' }}">
+                </div>
                 <div class="form-group">
                     <label for="cost">Cost (optional)</label>
                     <input type="number" id="cost" name="cost" value="{{ item.cost or 0 }}" min="0" step="0.01" placeholder="0.00">

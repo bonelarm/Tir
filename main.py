@@ -22,6 +22,30 @@ IMAGES_DIR = STATIC_DIR / "images"
 STATIC_DIR.mkdir(exist_ok=True)
 IMAGES_DIR.mkdir(exist_ok=True)
 
+def ensure_items_schema():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(items)")
+        cols = [r[1] for r in cur.fetchall()]
+        if 'year_made' not in cols:
+            cur.execute("ALTER TABLE items ADD COLUMN year_made INTEGER")
+        if 'made_in' not in cols:
+            cur.execute("ALTER TABLE items ADD COLUMN made_in TEXT")
+        if 'status' not in cols:
+            cur.execute("ALTER TABLE items ADD COLUMN status INTEGER DEFAULT 0")
+        if 'class_id' not in cols:
+            cur.execute("ALTER TABLE items ADD COLUMN class_id INTEGER")
+        # Ensure classes table exists
+        cur.execute("CREATE TABLE IF NOT EXISTS classes (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, position INTEGER DEFAULT 0)")
+        conn.commit()
+        conn.close()
+    except Exception:
+        # If DB not ready or table missing, ignore here; could be created later by migrations
+        pass
+
+ensure_items_schema()
+
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/css", StaticFiles(directory="css"), name="css")
 app.mount("/js", StaticFiles(directory="js"), name="js")
@@ -82,28 +106,28 @@ def get_items(search: str = "", sort: str = "name_asc"):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    query = "SELECT * FROM items WHERE 1=1"
+    query = "SELECT i.*, c.name as class_name FROM items i LEFT JOIN classes c ON i.class_id = c.id WHERE 1=1"
     params = []
     
     if search:
         search_term = f"%{search}%"
-        query += " AND (name LIKE ? OR description LIKE ?)"
+        query += " AND (i.name LIKE ? OR i.description LIKE ?)"
         params.extend([search_term, search_term])
     
     if sort == "name_asc":
-        query += " ORDER BY name ASC"
+        query += " ORDER BY i.name ASC"
     elif sort == "name_desc":
-        query += " ORDER BY name DESC"
+        query += " ORDER BY i.name DESC"
     elif sort == "quantity_asc":
-        query += " ORDER BY quantity ASC"
+        query += " ORDER BY i.quantity ASC"
     elif sort == "quantity_desc":
-        query += " ORDER BY quantity DESC"
+        query += " ORDER BY i.quantity DESC"
     elif sort == "cost_asc":
-        query += " ORDER BY cost ASC"
+        query += " ORDER BY i.cost ASC"
     elif sort == "cost_desc":
-        query += " ORDER BY cost DESC"
+        query += " ORDER BY i.cost DESC"
     else:
-        query += " ORDER BY name ASC"
+        query += " ORDER BY i.name ASC"
     
     cursor.execute(query, params)
     items = cursor.fetchall()
@@ -111,11 +135,24 @@ def get_items(search: str = "", sort: str = "name_asc"):
     return [dict(row) for row in items]
 
 
+def get_classes():
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name FROM classes ORDER BY name ASC")
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception:
+        return []
+
+
 def get_item(item_id):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM items WHERE id = ?", (item_id,))
+    cursor.execute("SELECT i.*, c.name as class_name FROM items i LEFT JOIN classes c ON i.class_id = c.id WHERE i.id = ?", (item_id,))
     item = cursor.fetchone()
     conn.close()
     return dict(item) if item else None
@@ -729,7 +766,8 @@ def health():
 @app.get("/items", response_class=HTMLResponse)
 def items(request: Request, search: str = "", sort: str = "name_asc"):
     item_list = get_items(search, sort)
-
+    classes = get_classes()
+    
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -751,12 +789,13 @@ def items(request: Request, search: str = "", sort: str = "name_asc"):
         "request": request,
         "items": item_list,
         "search": search,
-        "sort": sort
+        "sort": sort,
+        "classes": classes
     })
 
 
 @app.post("/items/add")
-async def add_item(name: str = Form(...), description: str = Form(""), quantity: int = Form(0), cost: float = Form(0.0), image: UploadFile = File(None)):
+async def add_item(name: str = Form(...), description: str = Form(""), quantity: int = Form(0), cost: float = Form(0.0), image: UploadFile = File(None), year_made: int | None = Form(None), made_in: str | None = Form(None), class_id: int | None = Form(None), new_class: str | None = Form(None)):
     image_path = ""
     if image and image.filename:
         safe_filename = f"{Path(image.filename).stem[:50]}{Path(image.filename).suffix}"
@@ -767,7 +806,22 @@ async def add_item(name: str = Form(...), description: str = Form(""), quantity:
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO items (name, description, image, quantity, cost) VALUES (?, ?, ?, ?, ?)", (name, description, image_path, quantity, cost))
+    # Resolve class_id from new_class or existing class_id
+    class_id_final = None
+    if new_class and new_class.strip():
+        cursor.execute("SELECT id FROM classes WHERE name = ?", (new_class.strip(),))
+        row = cursor.fetchone()
+        if row:
+            class_id_final = row[0]
+        else:
+            cursor.execute("INSERT INTO classes (name) VALUES (?)", (new_class.strip(),))
+            class_id_final = cursor.lastrowid
+    elif class_id:
+        try:
+            class_id_final = int(class_id)
+        except Exception:
+            class_id_final = None
+    cursor.execute("INSERT INTO items (name, description, image, quantity, cost, year_made, made_in, class_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (name, description, image_path, quantity, cost, year_made, made_in, class_id_final, 0))
     conn.commit()
     conn.close()
     return RedirectResponse(url="/items", status_code=303)
@@ -792,15 +846,17 @@ def edit_item(item_id: int, request: Request):
     tasks = cursor.fetchall()
     conn.close()
 
+    classes = get_classes()
     return templates.TemplateResponse("item_edit.html", {
         "request": request,
         "item": item,
         "tasks": [dict(row) for row in tasks]
+        , "classes": classes
     })
 
 
 @app.post("/items/edit/{item_id}")
-async def update_item(item_id: int, name: str = Form(...), description: str = Form(""), quantity: int = Form(0), cost: float = Form(0.0), image: UploadFile = File(None)):
+async def update_item(item_id: int, name: str = Form(...), description: str = Form(""), quantity: int = Form(0), cost: float = Form(0.0), image: UploadFile = File(None), year_made: int | None = Form(None), made_in: str | None = Form(None), class_id: int | None = Form(None), new_class: str | None = Form(None)):
     item = get_item(item_id)
     if not item:
         return RedirectResponse(url="/items", status_code=303)
@@ -819,7 +875,22 @@ async def update_item(item_id: int, name: str = Form(...), description: str = Fo
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("UPDATE items SET name = ?, description = ?, image = ?, quantity = ?, cost = ? WHERE id = ?", (name, description, image_path, quantity, cost, item_id))
+    # Resolve class_id_final from new_class or existing class_id
+    class_id_final = None
+    if new_class and new_class.strip():
+        cursor.execute("SELECT id FROM classes WHERE name = ?", (new_class.strip(),))
+        row = cursor.fetchone()
+        if row:
+            class_id_final = row[0]
+        else:
+            cursor.execute("INSERT INTO classes (name) VALUES (?)", (new_class.strip(),))
+            class_id_final = cursor.lastrowid
+    elif class_id:
+        try:
+            class_id_final = int(class_id)
+        except Exception:
+            class_id_final = None
+    cursor.execute("UPDATE items SET name = ?, description = ?, image = ?, quantity = ?, cost = ?, year_made = ?, made_in = ?, class_id = ? WHERE id = ?", (name, description, image_path, quantity, cost, year_made, made_in, class_id_final, item_id))
     conn.commit()
     conn.close()
     return RedirectResponse(url="/items", status_code=303)
