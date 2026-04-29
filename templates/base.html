@@ -10,12 +10,17 @@
 <body>
     <header>
         <nav class="container">
-            <a href="/">Home</a>
-            <a href="/status">Status</a>
-            <a href="/customers">Customers</a>
-            <a href="/tasks">Tasks</a>
-            <a href="/items">Items</a>
+            {# Determine current language from cookies (default to English) #}
+            {% set current_lang = request.cookies.get('lang', 'en') %}
+            <a href="/">{% if current_lang == 'hy' %}Գլխավոր{% else %}Home{% endif %}</a>
+            <a href="/status">{% if current_lang == 'hy' %}Կարգավիճակ{% else %}Status{% endif %}</a>
+            <a href="/customers">{% if current_lang == 'hy' %}Հաճախորդներ{% else %}Customers{% endif %}</a>
+            <a href="/tasks">{% if current_lang == 'hy' %}Առաջադրանքներ{% else %}Tasks{% endif %}</a>
+            <a href="/items">{% if current_lang == 'hy' %}Առարկաներ{% else %}Items{% endif %}</a>
         </nav>
+        <div class="lang-toggle" style="position:absolute; right:20px; top:8px; font-size:12px;">
+            <a href="/set_language/hy">Հայերեն</a> | <a href="/set_language/en">English</a>
+        </div>
     </header>
     {% block content %}{% endblock %}
 </body>

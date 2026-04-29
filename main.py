@@ -65,6 +65,18 @@ def get_db_status():
                 "db_size_kb": 0, "uptime": "0s", "response_time_ms": 0}
 
 
+@app.get("/set_language/{lang}")
+async def set_language(lang: str, request: Request):
+    # Minimal i18n switch: supports English ('en') and Armenian ('hy')
+    if lang not in ("en", "hy"):
+        lang = "en"
+    referer = request.headers.get("referer") or "/"
+    response = RedirectResponse(url=referer, status_code=303)
+    # Persist preference for a year
+    response.set_cookie(key="lang", value=lang, max_age=60 * 60 * 24 * 365)
+    return response
+
+
 def get_items(search: str = "", sort: str = "name_asc"):
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
