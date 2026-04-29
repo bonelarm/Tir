@@ -239,13 +239,9 @@ def root(request: Request):
     """)
     recent_tasks = [dict(row) for row in cursor.fetchall()]
 
-    # Items with low quantity (for inventory bar)
-    cursor.execute("SELECT name, quantity FROM items ORDER BY quantity ASC LIMIT 5")
-    low_stock_items = [dict(row) for row in cursor.fetchall()]
-
-    # Total inventory value
-    cursor.execute("SELECT COALESCE(SUM(quantity * price), 0) as total_value FROM items")
-    total_inventory_value = cursor.fetchone()["total_value"]
+    # All items for price dashboard (use cost as price if price is 0)
+    cursor.execute("SELECT id, name, CASE WHEN price > 0 THEN price ELSE cost END as price, quantity FROM items ORDER BY name ASC")
+    all_items = [dict(row) for row in cursor.fetchall()]
 
     conn.close()
 
@@ -259,9 +255,8 @@ def root(request: Request):
         "done_count": done_count,
         "tasks_by_column": tasks_by_column,
         "recent_tasks": recent_tasks,
-        "low_stock_items": low_stock_items,
-        "total_inventory_value": total_inventory_value,
-        "completion_rate": completion_rate
+        "completion_rate": completion_rate,
+        "all_items": all_items
     })
 
 
