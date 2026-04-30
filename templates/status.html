@@ -6,7 +6,7 @@
 <main class="container" style="padding: 2rem 0;">
     <div class="flex items-center justify-between" style="margin-bottom: 1.5rem;">
         <h1>Status</h1>
-        <button onclick="fetchStatus()" class="btn btn-ghost btn-sm" id="refreshBtn">
+        <button onclick="refreshStatus()" class="btn btn-ghost btn-sm" id="refreshBtn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
             Refresh
         </button>
@@ -69,6 +69,23 @@
             <span id="uptime" class="text-primary" style="font-size: 1.25rem; font-weight: 600;">-</span>
         </p>
     </div>
+
+    <div class="card">
+        <h3 style="margin-bottom: 1rem;">Database Management</h3>
+        <div class="flex gap-2">
+            <a href="/status/export-db" class="btn btn-sm btn-ghost">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export DB
+            </a>
+            <form action="/status/import-db" method="post" enctype="multipart/form-data" style="display: inline;" onsubmit="return confirm('This will replace the current database. Are you sure?')">
+                <label class="btn btn-sm btn-ghost" style="cursor: pointer;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Import DB
+                    <input type="file" name="file" accept=".db" style="display: none;" onchange="this.form.submit()">
+                </label>
+            </form>
+        </div>
+    </div>
 </main>
 
 <style>
@@ -118,46 +135,167 @@
 </style>
 
 <script>
-    async function fetchStatus() {
-        const btn = document.getElementById('refreshBtn');
-        const statusBadge = document.getElementById('statusBadge');
-        try {
-            btn.querySelector('svg').classList.add('spinning');
-            statusBadge.className = 'status-badge status-loading';
-            statusBadge.textContent = 'Checking...';
+    let uptimeSeconds = 0;
+    let uptimeInterval = null;
+    let monitorTimer = null;
+    let isServerUp = false;
 
-            const res = await fetch('/health');
-            const data = await res.json();
+    function parseUptime(str) {
+        let sec = 0;
+        (str || '').match(/(\d+)h|(\d+)m|(\d+)s/g)?.forEach(m => {
+            if (m.includes('h')) sec += parseInt(m) * 3600;
+            else if (m.includes('m')) sec += parseInt(m) * 60;
+            else if (m.includes('s')) sec += parseInt(m);
+        });
+        return sec;
+    }
 
-            statusBadge.textContent = data.status;
-            if (data.status === 'healthy') {
-                statusBadge.className = 'status-badge status-healthy';
-            } else if (data.status === 'error') {
-                statusBadge.className = 'status-badge status-error';
-            } else {
-                statusBadge.className = 'status-badge status-unknown';
-            }
+    function formatUptime(s) {
+        return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m ${s%60}s`;
+    }
 
-            document.getElementById('customerCount').textContent = data.customer_count || 0;
-            document.getElementById('taskCount').textContent = data.task_count || 0;
-            document.getElementById('itemCount').textContent = data.item_count || 0;
-            document.getElementById('dbSize').textContent = (data.db_size_kb || 0) + ' KB';
-            document.getElementById('uptime').textContent = data.uptime || '-';
-            document.getElementById('responseTime').textContent = (data.response_time_ms || 0) + ' ms';
-            document.getElementById('lastCheck').textContent = 'Last checked: ' + new Date().toLocaleTimeString();
-        } catch {
-            statusBadge.textContent = 'Error';
-            statusBadge.className = 'status-badge status-error';
-            document.getElementById('customerCount').textContent = '-';
-            document.getElementById('taskCount').textContent = '-';
-            document.getElementById('itemCount').textContent = '-';
-            document.getElementById('dbSize').textContent = '-';
-            document.getElementById('uptime').textContent = '-';
-            document.getElementById('responseTime').textContent = '-';
-        } finally {
-            btn.querySelector('svg').classList.remove('spinning');
+    function stopUptime() {
+        if (uptimeInterval) {
+            clearInterval(uptimeInterval);
+            uptimeInterval = null;
         }
     }
-    fetchStatus();
+
+    function showServerDown() {
+        stopUptime();
+        isServerUp = false;
+        if (monitorTimer) { clearTimeout(monitorTimer); monitorTimer = null; }
+
+        document.getElementById('uptime').textContent = 'Server Down';
+        document.getElementById('uptime').style.color = '#ef4444';
+        const badge = document.getElementById('statusBadge');
+        badge.textContent = 'Server Down';
+        badge.className = 'status-badge status-error';
+        ['customerCount','taskCount','itemCount','dbSize','responseTime'].forEach(id => {
+            document.getElementById(id).textContent = '-';
+        });
+    }
+
+    function showServerUp(data) {
+        isServerUp = true;
+        const badge = document.getElementById('statusBadge');
+        badge.textContent = 'healthy';
+        badge.className = 'status-badge status-healthy';
+        document.getElementById('customerCount').textContent = data.customer_count || 0;
+        document.getElementById('taskCount').textContent = data.task_count || 0;
+        document.getElementById('itemCount').textContent = data.item_count || 0;
+        document.getElementById('dbSize').textContent = (data.db_size_kb || 0) + ' KB';
+        document.getElementById('responseTime').textContent = (data.response_time_ms || 0) + ' ms';
+        document.getElementById('lastCheck').textContent = 'Last: ' + new Date().toLocaleTimeString();
+    }
+
+    function startUptimeCounter(baseSeconds) {
+        stopUptime();
+        uptimeSeconds = baseSeconds;
+        document.getElementById('uptime').textContent = formatUptime(uptimeSeconds);
+        document.getElementById('uptime').style.color = '';
+        uptimeInterval = setInterval(() => {
+            uptimeSeconds++;
+            document.getElementById('uptime').textContent = formatUptime(uptimeSeconds);
+        }, 1000);
+    }
+
+    function checkHealth() {
+        if (monitorTimer) clearTimeout(monitorTimer);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', '/health?t=' + Date.now(), true);
+        xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        xhr.timeout = 500;
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.status === 'healthy') {
+                        if (!isServerUp) {
+                            startUptimeCounter(parseUptime(data.uptime || '0s'));
+                            showServerUp(data);
+                        } else {
+                            document.getElementById('uptime').textContent = formatUptime(uptimeSeconds);
+                            showServerUp(data);
+                        }
+                    } else {
+                        showServerDown();
+                    }
+                } catch(e) {
+                    showServerDown();
+                }
+            } else {
+                showServerDown();
+            }
+            monitorTimer = setTimeout(checkHealth, 1000);
+        };
+
+        xhr.onerror = xhr.ontimeout = function() {
+            showServerDown();
+            monitorTimer = setTimeout(checkHealth, 1000);
+        };
+
+        xhr.send();
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+            checkHealth();
+        } else {
+            if (monitorTimer) { clearTimeout(monitorTimer); monitorTimer = null; }
+            stopUptime();
+        }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        stopUptime();
+        if (monitorTimer) clearTimeout(monitorTimer);
+    });
+
+    function refreshStatus() {
+        const btn = document.getElementById('refreshBtn');
+        btn.querySelector('svg').classList.add('spinning');
+
+        stopUptime();
+        isServerUp = false;
+        if (monitorTimer) { clearTimeout(monitorTimer); monitorTimer = null; }
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', '/health?t=' + Date.now(), true);
+        xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        xhr.timeout = 2000;
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.status === 'healthy') {
+                        startUptimeCounter(parseUptime(data.uptime || '0s'));
+                        showServerUp(data);
+                    } else {
+                        showServerDown();
+                    }
+                } catch(e) {
+                    showServerDown();
+                }
+            } else {
+                showServerDown();
+            }
+            btn.querySelector('svg').classList.remove('spinning');
+            monitorTimer = setTimeout(checkHealth, 1000);
+        };
+
+        xhr.onerror = xhr.ontimeout = function() {
+            showServerDown();
+            btn.querySelector('svg').classList.remove('spinning');
+            monitorTimer = setTimeout(checkHealth, 1000);
+        };
+
+        xhr.send();
+    }
+
+    checkHealth();
 </script>
 {% endblock %}

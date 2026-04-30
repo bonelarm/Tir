@@ -760,7 +760,37 @@ def delete_column(column_id: int):
 
 @app.get("/health")
 def health():
-    return get_db_status()
+    response = get_db_status()
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        content=response,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+
+@app.get("/status/export-db")
+def export_db():
+    from fastapi.responses import FileResponse
+    if not DB_PATH.exists():
+        return RedirectResponse(url="/status", status_code=303)
+    return FileResponse(
+        path=str(DB_PATH),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": "attachment; filename=tir.db"}
+    )
+
+
+@app.post("/status/import-db")
+async def import_db(file: UploadFile = File(...)):
+    if not file.filename.endswith('.db'):
+        return RedirectResponse(url="/status", status_code=303)
+    content = await file.read()
+    DB_PATH.write_bytes(content)
+    return RedirectResponse(url="/status", status_code=303)
 
 
 @app.get("/items", response_class=HTMLResponse)
