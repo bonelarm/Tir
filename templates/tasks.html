@@ -289,6 +289,18 @@ function drag(ev) {
     ev.target.style.opacity = '0.5';
 }
 
+// Physics-like entrance for task cards: staggered spring-in on load
+document.addEventListener('DOMContentLoaded', function() {
+  const cards = Array.from(document.querySelectorAll('.task-card'));
+  cards.forEach((card, idx) => {
+    card.style.opacity = '0';
+    setTimeout(() => {
+      card.style.opacity = '';
+      card.classList.add('spring-in');
+    }, idx * 60);
+  });
+});
+
 function allowDrop(ev) {
     ev.preventDefault();
     const column = ev.target.closest('.board-column');
@@ -513,6 +525,17 @@ document.addEventListener('dragend', function(e) {
     margin-top: 0.5rem;
     padding-top: 0.5rem;
     border-top: 1px solid var(--border-light);
+}
+</style>
+ 
+<style>
+.task-card.spring-in {
+  animation: springIn 520ms cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes springIn {
+  0% { transform: translateY(-40px) scale(0.95); opacity: 0; }
+  60% { transform: translateY(6px) scale(1.02); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 </style>
 {% endblock %}
