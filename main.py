@@ -88,6 +88,9 @@ def get_db_status():
         return {"status": "error", "customer_count": 0, "task_count": 0, "item_count": 0,
                 "db_size_kb": 0, "uptime": "0s", "response_time_ms": 0}
 
+def get_cs_status():
+    return get_db_status()
+
 
 @app.get("/set_language/{lang}")
 async def set_language(lang: str, request: Request):
@@ -329,6 +332,19 @@ def root(request: Request):
 @app.get("/cs", response_class=HTMLResponse)
 def cs(request: Request):
     return templates.TemplateResponse("cs.html", {"request": request})
+
+@app.get("/cs/status")
+def cs_status():
+    response = get_cs_status()
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        content=response,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 @app.get("/status", response_class=HTMLResponse)
 def status(request: Request):
@@ -776,11 +792,11 @@ def health():
     )
 
 
-@app.get("/status/export-db")
-def export_db():
+@app.get("/cs/export-db")
+def cs_export_db():
     from fastapi.responses import FileResponse
     if not DB_PATH.exists():
-        return RedirectResponse(url="/status", status_code=303)
+        return RedirectResponse(url="/cs", status_code=303)
     return FileResponse(
         path=str(DB_PATH),
         media_type="application/octet-stream",
@@ -788,13 +804,13 @@ def export_db():
     )
 
 
-@app.post("/status/import-db")
-async def import_db(file: UploadFile = File(...)):
+@app.post("/cs/import-db")
+async def cs_import_db(file: UploadFile = File(...)):
     if not file.filename.endswith('.db'):
-        return RedirectResponse(url="/status", status_code=303)
+        return RedirectResponse(url="/cs", status_code=303)
     content = await file.read()
     DB_PATH.write_bytes(content)
-    return RedirectResponse(url="/status", status_code=303)
+    return RedirectResponse(url="/cs", status_code=303)
 
 
 @app.get("/items", response_class=HTMLResponse)

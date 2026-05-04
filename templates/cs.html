@@ -103,11 +103,11 @@
             <div class="card">
                 <h3 style="margin-bottom: 1rem;">Database Management</h3>
                 <div class="flex gap-2">
-                    <a href="/status/export-db" class="btn btn-sm btn-ghost">
+                    <a href="/cs/export-db" class="btn btn-sm btn-ghost">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         Export DB
                     </a>
-                    <form action="/status/import-db" method="post" enctype="multipart/form-data" style="display: inline;" onsubmit="return confirm('This will replace the current database. Are you sure?')">
+                    <form action="/cs/import-db" method="post" enctype="multipart/form-data" style="display: inline;" onsubmit="return confirm('This will replace the current database. Are you sure?')">
                         <label class="btn btn-sm btn-ghost" style="cursor: pointer;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                             Import DB
@@ -332,7 +332,7 @@
         if (monitorTimer) clearTimeout(monitorTimer);
 
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', '/health?t=' + Date.now(), true);
+        xhr.open('GET', '/cs/status?t=' + Date.now(), true);
         xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         xhr.timeout = 500;
 
@@ -391,7 +391,7 @@
         if (monitorTimer) { clearTimeout(monitorTimer); monitorTimer = null; }
 
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', '/health?t=' + Date.now(), true);
+        xhr.open('GET', '/cs/status?t=' + Date.now(), true);
         xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         xhr.timeout = 2000;
 
