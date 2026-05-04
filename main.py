@@ -326,6 +326,10 @@ def root(request: Request):
     })
 
 
+@app.get("/cs", response_class=HTMLResponse)
+def cs(request: Request):
+    return templates.TemplateResponse("cs.html", {"request": request})
+
 @app.get("/status", response_class=HTMLResponse)
 def status(request: Request):
     return templates.TemplateResponse("status.html", {"request": request})
